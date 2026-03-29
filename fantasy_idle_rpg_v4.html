@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>마법사의 탑 v4</title>
+<style>
+:root{
+  --gold:#f0c040;--gold2:#a07010;--gold3:#ffe080;
+  --bg0:#07050a;--bg1:#0f0813;--bg2:#1a1024;--bg3:#22142e;
+  --ruby:#c0203a;--em:#10a050;--pur:#9040d0;--cyan:#20c0b0;
+  --txt:#e8d8b0;--dim:#806858;--br:#2a1830;--brg:#503828;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg0);color:var(--txt);font-family:Georgia,serif;display:flex;justify-content:center;}
+#app{width:100%;max-width:430px;height:100svh;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+
+/* ── BG SCENE ── */
+#scene-bg{position:absolute;inset:0;z-index:0;overflow:hidden;}
+.bg-layer{position:absolute;inset:0;}
+#sky-grad{background:radial-gradient(ellipse at 50% 0%,#1a0830 0%,#07050a 60%);}
+#stars-cv{position:absolute;inset:0;width:100%;height:100%;}
+#ground{position:absolute;bottom:0;left:0;right:0;height:30%;background:linear-gradient(180deg,transparent 0%,#0d0818 40%,#150d20 100%);}
+.ground-line{position:absolute;bottom:30%;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#3a2040,#6040a0,#3a2040,transparent);}
+.castle-bg{position:absolute;bottom:28%;left:50%;transform:translateX(-50%);opacity:.15;font-size:80px;pointer-events:none;}
+
+/* ── HEADER ── */
+header{position:relative;z-index:30;padding:8px 12px 6px;display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,rgba(10,5,18,.95) 0%,rgba(10,5,18,.7) 100%);border-bottom:1px solid rgba(80,56,40,.4);}
+.logo{font-size:13px;font-weight:900;color:var(--gold);text-shadow:0 0 12px rgba(240,192,64,.5);letter-spacing:1px;white-space:nowrap;}
+.hd-pills{display:flex;gap:4px;flex:1;flex-wrap:wrap;}
+.hpill{display:flex;align-items:center;gap:2px;background:rgba(0,0,0,.55);border:1px solid var(--brg);border-radius:14px;padding:2px 7px;font-size:10px;color:var(--gold);}
+.hpill .s{color:var(--dim);font-size:8px;margin-left:1px;}
+.menu-btn{background:rgba(0,0,0,.5);border:1px solid var(--brg);border-radius:8px;padding:5px 8px;cursor:pointer;font-size:16px;color:var(--gold);flex-shrink:0;transition:all .15s;}
+.menu-btn:active{transform:scale(.92);}
+
+/* ── FLOOR/WAVE BAR ── */
+#topbar{position:relative;z-index:20;margin:5px 10px 0;display:flex;gap:6px;align-items:center;}
+.floor-badge{background:rgba(0,0,0,.6);border:1px solid var(--brg);border-radius:8px;padding:3px 9px;font-size:10px;color:var(--gold);white-space:nowrap;}
+.wave-wrap{flex:1;background:rgba(0,0,0,.5);border:1px solid var(--br);border-radius:6px;height:12px;overflow:hidden;position:relative;}
+.wave-inner{height:100%;border-radius:6px;transition:width .35s ease;}
+.wave-inner.n{background:linear-gradient(90deg,#106030,#20c060);}
+.wave-inner.b{background:linear-gradient(90deg,#800060,#d000c0);}
+.wave-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:rgba(255,255,255,.8);letter-spacing:.5px;}
+.offline-pill{background:rgba(240,192,64,.2);border:1px solid var(--brg);border-radius:8px;padding:3px 7px;font-size:9px;color:var(--gold);cursor:pointer;display:none;animation:blink 1.5s ease-in-out infinite alternate;}
+@keyframes blink{from{opacity:.7}to{opacity:1}}
+
+/* ── BATTLE SCENE (canvas) ── */
+#battle-scene{position:relative;z-index:10;flex:1;overflow:hidden;cursor:pointer;}
+#battle-cv{position:absolute;inset:0;width:100%;height:100%;}
+
+/* Monster name plate */
+#enemy-plate{position:absolute;top:8px;right:10px;z-index:15;text-align:right;}
+.ep-name{font-size:11px;font-weight:700;color:var(--ruby);text-shadow:0 1px 4px rgba(0,0,0,.8);}
+.ep-name.boss{color:#e060ff;}
+.ep-hp-wrap{width:120px;height:8px;background:rgba(0,0,0,.7);border-radius:4px;border:1px solid rgba(192,32,58,.4);overflow:hidden;margin-top:3px;margin-left:auto;}
+.ep-hp-fill{height:100%;border-radius:4px;transition:width .2s;}
+.ep-hp-fill.n{background:linear-gradient(90deg,#800018,#c0203a);}
+.ep-hp-fill.b{background:linear-gradient(90deg,#600080,#b000e0);}
+.ep-hp-txt{font-size:8px;color:var(--dim);text-align:right;margin-top:1px;}
+
+/* Click prompt */
+#click-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(240,192,64,.6);letter-spacing:1px;animation:hint-fade 2s ease-in-out infinite alternate;pointer-events:none;}
+@keyframes hint-fade{from{opacity:.4}to{opacity:.8}}
+
+/* ── BOTTOM NAV ── */
+#bottom-nav{position:relative;z-index:30;display:flex;background:rgba(10,5,18,.96);border-top:1px solid rgba(80,56,40,.5);padding:4px 0 2px;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 2px;background:none;border:none;cursor:pointer;color:var(--dim);font-size:8px;letter-spacing:.2px;transition:color .15s;position:relative;}
+.nav-btn.active{color:var(--gold);}
+.nav-btn.active::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--gold);border-radius:0 0 2px 2px;}
+.nav-ic{font-size:22px;line-height:1;}
+.nav-badge{position:absolute;top:2px;right:calc(50% - 16px);background:var(--ruby);color:#fff;font-size:7px;border-radius:6px;padding:1px 4px;min-width:14px;text-align:center;}
+
+/* ── MODAL SYSTEM ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;flex-direction:column;justify-content:flex-end;}
+.modal-backdrop.center{justify-content:center;align-items:center;}
+.modal-backdrop.hidden{display:none;}
+.modal-sheet{background:var(--bg2);border-radius:20px 20px 0 0;border-top:1px solid var(--brg);max-height:80svh;display:flex;flex-direction:column;overflow:hidden;width:100%;max-width:430px;}
+.modal-backdrop.center .modal-sheet{border-radius:16px;max-height:85svh;margin:12px;}
+.modal-drag{width:40px;height:4px;background:var(--br);border-radius:2px;margin:10px auto 0;}
+.modal-hdr{padding:12px 16px 8px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--br);flex-shrink:0;}
+.modal-title{font-size:15px;font-weight:700;color:var(--gold);}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--dim);font-size:20px;padding:2px 6px;}
+.modal-body{overflow-y:auto;padding:12px 14px 20px;flex:1;}
+.modal-body::-webkit-scrollbar{width:3px;}
+.modal-body::-webkit-scrollbar-thumb{background:var(--brg);border-radius:2px;}
+
+/* ── MENU SIDEBAR ── */
+#menu-ov{position:fixed;inset:0;z-index:200;display:flex;justify-content:flex-end;}
+#menu-ov.hidden{display:none;}
+.menu-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.6);}
+.menu-panel{position:relative;z-index:1;width:220px;height:100%;background:var(--bg3);border-left:1px solid var(--brg);display:flex;flex-direction:column;padding:0;}
+.menu-top{padding:40px 16px 16px;border-bottom:1px solid var(--br);}
+.menu-player{display:flex;align-items:center;gap:10px;}
+.menu-avatar{font-size:40px;}
+.menu-player-info .name{font-size:14px;font-weight:700;color:var(--gold);}
+.menu-player-info .sub{font-size:10px;color:var(--dim);margin-top:2px;}
+.menu-items{flex:1;overflow-y:auto;padding:8px 0;}
+.menu-item{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;transition:background .15s;border:none;background:none;width:100%;color:var(--txt);font-size:13px;font-family:Georgia,serif;}
+.menu-item:active{background:rgba(255,255,255,.05);}
+.menu-item-ic{font-size:20px;width:28px;text-align:center;}
+.menu-item-txt{flex:1;text-align:left;}
+.menu-item-badge{background:var(--ruby);color:#fff;font-size:8px;border-radius:6px;padding:1px 5px;}
+.menu-bottom{padding:12px 16px;border-top:1px solid var(--br);}
+.save-info{font-size:9px;color:var(--dim);text-align:center;}
+
+/* ── SEC HEADER ── */
+.sec{font-size:9px;font-weight:700;letter-spacing:2.5px;color:var(--gold2);text-transform:uppercase;margin:4px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--brg);}
+
+/* ── HEROES ── */
+.hlist{display:flex;flex-direction:column;gap:7px;}
+.hcard{background:var(--bg3);border:1px solid var(--br);border-radius:10px;padding:10px;display:flex;gap:8px;align-items:center;}
+.hcard.active{border-color:var(--brg);}
+.hcard.locked{opacity:.38;}
+.hav{font-size:32px;flex-shrink:0;}
+.hinfo{flex:1;min-width:0;}
+.hn{font-size:12px;font-weight:700;color:var(--gold);}
+.htag{font-size:7px;padding:1px 4px;border-radius:4px;margin-left:3px;}
+.htag.rogue{background:rgba(192,32,58,.3);color:#ff9090;border:1px solid #c0203a50;}
+.htag.mage{background:rgba(144,64,208,.3);color:#c090ff;border:1px solid #9040d050;}
+.htag.tank{background:rgba(32,96,208,.3);color:#80b0ff;border:1px solid #2060d050;}
+.htag.support{background:rgba(16,160,80,.3);color:#80ffa0;border:1px solid #10a05050;}
+.hd{font-size:9px;color:var(--dim);font-style:italic;margin-bottom:3px;}
+.hlv{height:3px;background:rgba(0,0,0,.5);border-radius:2px;overflow:hidden;}
+.hlvf{height:100%;background:linear-gradient(90deg,var(--gold2),var(--gold));border-radius:2px;transition:width .35s;}
+.hbtn{flex-shrink:0;padding:6px 9px;background:linear-gradient(135deg,#1e1008,#3a1e08);border:1px solid var(--gold2);border-radius:7px;color:var(--gold);font-size:9px;cursor:pointer;text-align:center;min-width:52px;transition:all .12s;}
+.hbtn:active{transform:scale(.95);}
+.hbtn.na{opacity:.3;}
+.hbtn .c{font-size:11px;font-weight:700;color:var(--gold3);display:block;margin-top:1px;}
+
+/* ── SKILLS ── */
+.sktree{display:flex;flex-direction:column;gap:8px;}
+.skcat{background:var(--bg3);border:1px solid var(--br);border-radius:10px;overflow:hidden;}
+.skcat-hdr{padding:7px 11px;background:rgba(0,0,0,.3);display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--br);}
+.skcat-name{font-size:11px;font-weight:700;color:var(--gold);}
+.skcat-sub{font-size:8px;color:var(--dim);font-style:italic;margin-left:auto;}
+.sknodes{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px;}
+.sknode{background:rgba(0,0,0,.4);border:1px solid var(--br);border-radius:8px;padding:8px;text-align:center;cursor:pointer;transition:all .12s;}
+.sknode.unlocked{border-color:var(--gold2);background:rgba(240,192,64,.04);}
+.sknode.maxed{border-color:var(--em);background:rgba(16,160,80,.06);}
+.sknode.locked{opacity:.32;cursor:not-allowed;}
+.sknode:active:not(.locked){transform:scale(.96);}
+.sn-ico{font-size:22px;margin-bottom:2px;}
+.sn-name{font-size:9px;font-weight:700;color:var(--gold);margin-bottom:1px;}
+.sn-desc{font-size:8px;color:var(--dim);font-style:italic;margin-bottom:3px;line-height:1.4;}
+.sn-bar{height:2px;background:rgba(0,0,0,.5);border-radius:1px;overflow:hidden;margin-bottom:3px;}
+.sn-fill{height:100%;background:linear-gradient(90deg,var(--pur),var(--cyan));border-radius:1px;}
+.sn-cost{font-size:8px;color:var(--gold3);}
+
+/* ── ACTIVE SKILLS ── */
+.askgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px;}
+.ascard{background:var(--bg3);border:1px solid var(--br);border-radius:10px;padding:9px 8px;text-align:center;cursor:pointer;position:relative;overflow:hidden;transition:all .12s;}
+.ascard.cd{opacity:.55;cursor:not-allowed;}
+.ascard:active:not(.cd){transform:scale(.96);}
+.as-ico{font-size:26px;margin-bottom:2px;}
+.as-name{font-size:9px;font-weight:700;color:var(--gold);}
+.as-desc{font-size:8px;color:var(--dim);font-style:italic;margin-top:1px;}
+.cd-ov{position:absolute;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;border-radius:10px;}
+
+/* ── GACHA ── */
+.gbox{background:var(--bg3);border:1px solid var(--br);border-radius:12px;overflow:hidden;margin-bottom:10px;}
+.gbox-hdr{padding:10px 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--br);}
+.gbox-ico{font-size:28px;}
+.gbox-title{font-size:13px;font-weight:700;color:var(--gold);}
+.gbox-sub{font-size:9px;color:var(--dim);font-style:italic;margin-top:1px;}
+.gbox-rates{padding:8px 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;border-bottom:1px solid var(--br);}
+.rate-item{text-align:center;padding:4px 2px;border-radius:6px;background:rgba(0,0,0,.3);}
+.rate-item .ri{font-size:13px;}
+.rate-item .rn{font-size:7px;margin-top:1px;}
+.rate-item .rp{font-size:8px;font-weight:700;margin-top:1px;}
+.rn.common,.rp.common{color:var(--dim);}
+.rn.rare,.rp.rare{color:#6090ff;}
+.rn.epic,.rp.epic{color:#c080ff;}
+.rn.legend,.rp.legend{color:var(--gold);}
+.gbox-btns{padding:9px 12px;display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.gbtn{padding:9px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;text-align:center;border:none;transition:all .12s;display:flex;flex-direction:column;align-items:center;gap:1px;}
+.gbtn:active{transform:scale(.96);}
+.gbtn.g1{background:linear-gradient(135deg,#1a1808,#302f18);border:1px solid var(--gold2);color:var(--gold);}
+.gbtn.g10{background:linear-gradient(135deg,#1a0840,#381075);border:1px solid var(--pur);color:#d0b0ff;}
+.gbtn.na{opacity:.3;cursor:not-allowed;}
+.gbtn .cost{font-size:11px;font-weight:900;}
+
+/* Gacha result */
+.gr-ov{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+.gr-ov.hidden{display:none;}
+.gr-title{font-size:18px;font-weight:900;color:var(--gold);margin-bottom:14px;text-shadow:0 0 20px rgba(240,192,64,.7);}
+.gr-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;width:100%;max-width:360px;margin-bottom:14px;}
+.gr-item{background:var(--bg3);border-radius:9px;padding:7px 3px;text-align:center;animation:gr-pop .3s ease backwards;}
+@keyframes gr-pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.gr-item.common{border:1px solid var(--br);}
+.gr-item.rare{border:1px solid #2040a0;background:rgba(32,64,160,.15);}
+.gr-item.epic{border:1px solid #6020a0;background:rgba(96,32,160,.15);}
+.gr-item.legend{border:2px solid var(--gold2);background:rgba(160,112,16,.2);box-shadow:0 0 10px rgba(240,192,64,.3);}
+.gr-ico{font-size:24px;}
+.gr-name{font-size:7px;color:var(--txt);margin-top:2px;line-height:1.2;}
+.gr-rar{font-size:7px;margin-top:1px;}
+.gr-close{padding:11px 36px;background:linear-gradient(135deg,#1a0840,#381075);border:1px solid var(--pur);border-radius:10px;color:#d0b0ff;font-size:13px;font-weight:700;cursor:pointer;}
+
+/* ── EQUIPMENT ── */
+.eslots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:11px;}
+.eslot{background:var(--bg3);border:2px dashed var(--br);border-radius:10px;padding:10px 5px;text-align:center;cursor:pointer;min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .18s;}
+.eslot.filled{border-style:solid;border-color:var(--brg);}
+.eslot.filled.rare{border-color:#4080ff;}
+.eslot.filled.epic{border-color:#9040d0;}
+.eslot.filled.legend{border-color:var(--gold);box-shadow:0 0 8px rgba(240,192,64,.15);}
+.eslot-ico{font-size:24px;}
+.eslot-name{font-size:7px;color:var(--gold);}
+.eslot-stat{font-size:7px;color:var(--em);}
+.eslot-empty{font-size:9px;color:var(--dim);font-style:italic;}
+.inv-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px;}
+.iitem{background:var(--bg3);border:1px solid var(--br);border-radius:7px;padding:6px 3px;text-align:center;cursor:pointer;position:relative;transition:all .12s;}
+.iitem:active{transform:scale(.93);}
+.iitem.rare{border-color:#2040a0;}
+.iitem.epic{border-color:#6020a0;}
+.iitem.legend{border-color:var(--gold2);box-shadow:0 0 6px rgba(240,192,64,.12);}
+.iitem.sel{outline:2px solid var(--gold);}
+.ii-ico{font-size:21px;margin-bottom:1px;}
+.ii-name{font-size:7px;color:var(--txt);line-height:1.2;}
+.rdot{width:5px;height:5px;border-radius:50%;position:absolute;top:3px;right:3px;}
+.rdot.common{background:var(--dim);}
+.rdot.rare{background:#4080ff;}
+.rdot.epic{background:#c060ff;}
+.rdot.legend{background:var(--gold);}
+.idetail{background:var(--bg3);border:1px solid var(--brg);border-radius:10px;padding:12px;margin-bottom:7px;}
+.id-ico{font-size:36px;text-align:center;margin-bottom:4px;}
+.id-name{font-size:14px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:3px;}
+.id-rar{text-align:center;font-size:10px;font-style:italic;margin-bottom:7px;}
+.id-stats{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
+.id-srow{display:flex;justify-content:space-between;font-size:10px;}
+.id-srow .k{color:var(--dim);}
+.id-srow .v{color:var(--em);font-weight:600;}
+.id-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.idbtn{padding:7px;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;text-align:center;border:none;transition:all .12s;}
+.idbtn:active{transform:scale(.96);}
+.idbtn.equip{background:linear-gradient(135deg,#1a3010,#204020);border:1px solid var(--em);color:#80ff90;}
+.idbtn.sell{background:linear-gradient(135deg,#2a1008,#401010);border:1px solid var(--ruby);color:#ff8090;}
+
+/* ── ARTIFACTS ── */
+.art-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.acard{background:var(--bg3);border:1px solid var(--br);border-radius:10px;padding:10px;text-align:center;}
+.acard.owned{border-color:var(--brg);}
+.acard.high{border-color:var(--pur);box-shadow:0 0 10px rgba(144,64,208,.18);}
+.a-ico{font-size:32px;margin-bottom:4px;}
+.a-name{font-size:10px;font-weight:700;color:var(--gold);margin-bottom:2px;}
+.a-eff{font-size:8px;color:var(--dim);font-style:italic;margin-bottom:4px;line-height:1.3;}
+.a-bar{height:3px;background:rgba(0,0,0,.5);border-radius:2px;overflow:hidden;margin-bottom:3px;}
+.a-fill{height:100%;background:linear-gradient(90deg,var(--pur),var(--cyan));border-radius:2px;}
+.abtn{width:100%;padding:5px;background:linear-gradient(135deg,#1a0840,#2a1060);border:1px solid var(--pur);border-radius:7px;color:#d0b0ff;font-size:8px;cursor:pointer;}
+.abtn.na{opacity:.25;}
+
+/* ── PRESTIGE ── */
+.psgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
+.pst{text-align:center;padding:9px;background:rgba(0,0,0,.3);border-radius:8px;}
+.pst .v{font-size:15px;font-weight:900;color:var(--gold);}
+.pst .k{font-size:9px;color:var(--dim);margin-top:2px;}
+.prestige-btn{width:100%;padding:12px;background:linear-gradient(135deg,#180840,#38108a,#180840);border:2px solid var(--pur);border-radius:10px;color:#e0c0ff;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;box-shadow:0 4px 16px rgba(128,48,192,.25);transition:all .18s;}
+.prestige-btn:active{transform:scale(.98);}
+.prestige-btn.disabled{opacity:.25;cursor:not-allowed;}
+
+/* ── ATTENDANCE ── */
+.attend-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:14px;}
+.attend-day{background:var(--bg3);border:1px solid var(--br);border-radius:8px;padding:7px 2px;text-align:center;}
+.attend-day.done{border-color:var(--gold2);background:rgba(240,192,64,.08);}
+.attend-day.today{border-color:var(--em);background:rgba(16,160,80,.1);animation:today-pulse 1.5s ease-in-out infinite alternate;}
+@keyframes today-pulse{from{box-shadow:0 0 0 rgba(16,160,80,0)}to{box-shadow:0 0 8px rgba(16,160,80,.4)}}
+.attend-day.future{opacity:.4;}
+.ad-num{font-size:9px;color:var(--dim);margin-bottom:3px;}
+.ad-ico{font-size:18px;}
+.ad-done{font-size:11px;}
+.attend-claim-btn{width:100%;padding:11px;background:linear-gradient(135deg,#1a3008,#308020);border:1px solid var(--em);border-radius:10px;color:#80ff90;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;}
+.attend-claim-btn:active{transform:scale(.98);}
+.attend-claim-btn.na{opacity:.3;cursor:not-allowed;}
+.attend-streak{text-align:center;font-size:11px;color:var(--gold);margin-bottom:10px;font-style:italic;}
+
+/* ── SETTINGS ── */
+.setting-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--br);}
+.setting-row:last-child{border-bottom:none;}
+.setting-lbl{font-size:12px;color:var(--txt);}
+.setting-sub{font-size:9px;color:var(--dim);margin-top:2px;}
+.toggle{width:42px;height:22px;background:var(--br);border-radius:11px;position:relative;cursor:pointer;transition:background .2s;border:none;flex-shrink:0;}
+.toggle.on{background:var(--em);}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+.toggle.on::after{transform:translateX(20px);}
+.del-btn{padding:8px 14px;background:linear-gradient(135deg,#2a1008,#401010);border:1px solid var(--ruby);border-radius:8px;color:#ff8090;font-size:11px;cursor:pointer;}
+
+/* ── NOTIFICATIONS ── */
+.notif{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--brg);border-radius:16px;padding:6px 14px;font-size:11px;color:var(--gold);z-index:500;animation:nshow 2.5s ease forwards;white-space:nowrap;}
+@keyframes nshow{0%{opacity:0;top:0}15%{opacity:1;top:10px}75%{opacity:1;top:10px}100%{opacity:0;top:0}}
+.dmgpop{position:fixed;font-weight:900;pointer-events:none;z-index:400;animation:dpop .75s ease-out forwards;}
+@keyframes dpop{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-45px) scale(1.25)}}
+.clear-ov{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(240,192,64,.28) 0%,rgba(0,0,0,.9) 70%);display:flex;align-items:center;justify-content:center;z-index:250;opacity:0;pointer-events:none;transition:opacity .22s;}
+.clear-ov.show{opacity:1;pointer-events:all;}
+.clear-txt{font-size:24px;font-weight:900;color:var(--gold);text-shadow:0 0 32px rgba(240,192,64,.9);text-align:center;animation:pglow 1s ease-in-out infinite alternate;}
+@keyframes pglow{from{text-shadow:0 0 16px rgba(240,192,64,.6)}to{text-shadow:0 0 50px rgba(240,192,64,1)}}
+.boss-intro-ov{position:fixed;inset:0;background:rgba(0,0,0,.93);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:260;opacity:0;pointer-events:none;transition:opacity .25s;}
+.boss-intro-ov.show{opacity:1;pointer-events:all;}
+.bi-skull{font-size:70px;animation:ss .12s ease-in-out infinite alternate;}
+@keyframes ss{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
+.bi-title{font-size:26px;font-weight:900;color:#d040ff;text-shadow:0 0 28px rgba(208,64,255,.8);margin-top:8px;}
+.bi-name{font-size:16px;color:var(--txt);margin-top:5px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- Background scene -->
+<div id="scene-bg">
+  <div class="bg-layer" id="sky-grad"></div>
+  <canvas id="stars-cv"></canvas>
+  <div id="ground"></div>
+  <div class="ground-line"></div>
+  <div class="castle-bg">🏰</div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo">⚔️ 마법사의 탑</div>
+  <div class="hd-pills">
+    <div class="hpill">💰<span id="hd-gold">0</span><span class="s">G</span></div>
+    <div class="hpill">🏰<span id="hd-floor">1</span><span class="s">층</span></div>
+    <div class="hpill">✨<span id="hd-prestige">0</span><span class="s">전생</span></div>
+  </div>
+  <button class="menu-btn" onclick="openMenu()">☰</button>
+</header>
+
+<!-- Top bar: wave + floor -->
+<div id="topbar">
+  <div class="floor-badge" id="floor-badge">1층</div>
+  <div class="wave-wrap">
+    <div class="wave-inner n" id="wave-inner" style="width:0%"></div>
+    <div class="wave-txt" id="wave-txt">웨이브 0/5</div>
+  </div>
+  <div class="offline-pill" id="offline-pill" onclick="claimOffline()">⏰ 오프라인!</div>
+</div>
+
+<!-- BATTLE SCENE -->
+<div id="battle-scene" onclick="onTapScene(event)">
+  <canvas id="battle-cv"></canvas>
+
+  <!-- Enemy name plate -->
+  <div id="enemy-plate">
+    <div class="ep-name" id="ep-name">?</div>
+    <div class="ep-hp-wrap">
+      <div class="ep-hp-fill n" id="ep-hp-fill" style="width:100%"></div>
+    </div>
+    <div class="ep-hp-txt" id="ep-hp-txt">— / —</div>
+  </div>
+
+  <div id="click-hint">탭하여 공격!</div>
+</div>
+
+<!-- Bottom Nav -->
+<div id="bottom-nav">
+  <button class="nav-btn active" id="nav-battle" onclick="openModal('battle')"><span class="nav-ic">⚔️</span>스킬</button>
+  <button class="nav-btn" id="nav-heroes" onclick="openModal('heroes')"><span class="nav-ic">🦸</span>영웅</button>
+  <button class="nav-btn" id="nav-skills" onclick="openModal('skills')"><span class="nav-ic">🌿</span>패시브</button>
+  <button class="nav-btn" id="nav-gacha" onclick="openModal('gacha')"><span class="nav-ic">🎰</span>뽑기</button>
+  <button class="nav-btn" id="nav-equip" onclick="openModal('equip')"><span class="nav-ic">🗡️</span>장비</button>
+  <button class="nav-btn" id="nav-artifact" onclick="openModal('artifact')"><span class="nav-ic">🔮</span>유물</button>
+  <button class="nav-btn" id="nav-prestige" onclick="openModal('prestige')"><span class="nav-ic">📜</span>기록</button>
+</div>
+
+<!-- MODALS -->
+<div class="modal-backdrop hidden" id="modal-battle" onclick="closeModalIf(event,'modal-battle')">
+  <div class="modal-sheet" onclick="e=>e.stopPropagation()">
+    <div class="modal-drag"></div>
+    <div class="modal-hdr"><div class="modal-title">⚡ 액티브 스킬</div><button class="modal-close" onclick="closeModal('modal-battle')">✕</button></div>
+    <div class="modal-body">
+      <div class="askgrid" id="askgrid"></div>
+      <div class="sec">📊 현재 보너스</div>
+      <div id="bonus-wrap" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="modal-heroes" onclick="closeModalIf(event,'modal-heroes')">
+  <div class="modal-sheet" onclick="e=>e.stopPropagation()">
+    <div class="modal-drag"></div>
+    <div class="modal-hdr"><div class="modal-title">🦸 영웅</div><button class="modal-close" onclick="closeModal('modal-heroes')">✕</button></div>
+    <div class="modal-body"><div class="hlist" id="hlist"></div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="modal-skills" onclick="closeModalIf(event,'modal-skills')">
+  <div class="modal-sheet" onclick="e=>e.stopPropagation()">
+    <div class="modal-drag"></div>
+    <div class="modal-hdr"><div class="modal-title">🌿 패시브 스킬 트리</div><button class="modal-close" onclick="closeModal('modal-skills')">✕</button></div>
+    <div class="modal-body"><div class="sktree" id="sktree"></div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="modal-gacha" onclick="closeModalIf(event,'modal-gacha')">
+  <div class="modal-sheet" onclick="e=>e.stopPropagation()">
+    <div class="modal-drag"></div>
+    <div class="modal-hdr"><div class="modal-title">🎰 장비 뽑기</div><button class="modal-close" onclick="closeModal('modal-gacha')">✕</button></div>
+    <div class="modal-body" id="gacha-body"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="modal-equip" onclick="closeModalIf(event,'modal-equip')">
+  <div class="modal-sheet" onclick="e=>e.stopPropagation()">
+    <div class="modal-drag"></div>
+    <div class="modal-hdr"><div class="modal-title">🗡️ 장비</div><button class="modal-close" onclick="closeModal('modal-equip')">✕</button></div>
+    <div class="modal-body">
+      <div class="sec">장착 슬롯</div>
+      <div class="eslots" id="eslots"></div>
+      <div class="sec">인벤토리 (<span id="inv-count">0</span>/60)</div>
+      <div class="inv-grid" id="inv-grid"></div>
+      <div id="idetail-area"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="modal-artifact" onclick="closeModalIf(event,'modal-artifact')">
+  <div class="modal-sheet" onclick="e=>e.stopPropagation()">
+    <div class="modal-drag"></div>
+    <div class="modal-hdr"><div class="modal-title">🔮 유물</div><button class="modal-close" onclick="closeModal('modal-artifact')">✕</button></div>
+    <div class="modal-body"><div class="art-grid" id="art-grid"></div></div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="modal-prestige" onclick="closeModalIf(event,'modal-prestige')">
+  <div class="modal-sheet" onclick="e=>e.stopPropagation()">
+    <div class="modal-drag"></div>
+    <div class="modal-hdr"><div class="modal-title">📜 기록 & 전생</div><button class="modal-close" onclick="closeModal('modal-prestige')">✕</button></div>
+    <div class="modal-body">
+      <div class="sec">🏆 모험 기록</div>
+      <div class="psgrid">
+        <div class="pst"><div class="v" id="ps-kills">0</div><div class="k">총 처치</div></div>
+        <div class="pst"><div class="v" id="ps-dmg">0</div><div class="k">총 데미지</div></div>
+        <div class="pst"><div class="v" id="ps-gold">0</div><div class="k">획득 골드</div></div>
+        <div class="pst"><div class="v" id="ps-floor">1</div><div class="k">최고 층수</div></div>
+      </div>
+      <div class="sec" style="margin-top:8px">✨ 전생</div>
+      <p style="font-size:10px;color:var(--dim);font-style:italic;line-height:1.7;margin-bottom:8px">
+        15층 달성 시 전생 가능. 유물 유지.<br>
+        <span style="color:var(--gold)">클릭 x1.5 · DPS x1.5 · 골드 x1.3 영구 보너스</span>
+      </p>
+      <div id="prestige-preview" style="font-size:9px;color:var(--pur);margin-bottom:7px;font-style:italic;"></div>
+      <button class="prestige-btn disabled" id="prestige-btn" onclick="doPrestige()">✨ 전생하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- MENU SIDEBAR -->
+<div id="menu-ov" class="hidden">
+  <div class="menu-backdrop" onclick="closeMenu()"></div>
+  <div class="menu-panel">
+    <div class="menu-top">
+      <div class="menu-player">
+        <div class="menu-avatar">🧙</div>
+        <div class="menu-player-info">
+          <div class="name">용사</div>
+          <div class="sub" id="menu-floor-info">1층 도달</div>
+        </div>
+      </div>
+    </div>
+    <div class="menu-items">
+      <button class="menu-item" onclick="openAttendance()">
+        <span class="menu-item-ic">📅</span>
+        <span class="menu-item-txt">출석 체크</span>
+        <span class="menu-item-badge" id="attend-badge" style="display:none">NEW</span>
+      </button>
+      <button class="menu-item" onclick="openSettings()">
+        <span class="menu-item-ic">⚙️</span>
+        <span class="menu-item-txt">설정</span>
+      </button>
+      <button class="menu-item" onclick="openModal('prestige');closeMenu()">
+        <span class="menu-item-ic">📜</span>
+        <span class="menu-item-txt">기록 & 전생</span>
+      </button>
+      <button class="menu-item" onclick="claimOffline();closeMenu()">
+        <span class="menu-item-ic">⏰</span>
+        <span class="menu-item-txt">오프라인 보상</span>
+      </button>
+    </div>
+    <div class="menu-bottom">
+      <div class="save-info" id="save-info">저장 대기중...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ATTENDANCE MODAL -->
+<div class="modal-backdrop center hidden" id="modal-attend" onclick="closeModalIf(event,'modal-attend')">
+  <div class="modal-sheet" onclick="e=>e.stopPropagation()">
+    <div class="modal-hdr"><div class="modal-title">📅 출석 체크</div><button class="modal-close" onclick="closeModal('modal-attend')">✕</button></div>
+    <div class="modal-body" id="attend-body"></div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-backdrop center hidden" id="modal-settings" onclick="closeModalIf(event,'modal-settings')">
+  <div class="modal-sheet" onclick="e=>e.stopPropagation()">
+    <div class="modal-hdr"><div class="modal-title">⚙️ 설정</div><button class="modal-close" onclick="closeModal('modal-settings')">✕</button></div>
+    <div class="modal-body" id="settings-body"></div>
+  </div>
+</div>
+
+<!-- GACHA RESULT -->
+<div class="gr-ov hidden" id="gr-ov">
+  <div class="gr-title" id="gr-title">✨ 획득!</div>
+  <div class="gr-grid" id="gr-grid"></div>
+  <button class="gr-close" onclick="closeGachaResult()">확인</button>
+</div>
+
+<!-- OVERLAYS -->
+<div class="clear-ov" id="clear-ov"><div class="clear-txt" id="clear-txt">✨ CLEAR ✨</div></div>
+<div class="boss-intro-ov" id="boss-intro-ov">
+  <div class="bi-skull">💀</div>
+  <div class="bi-title">⚠ BOSS ⚠</div>
+  <div class="bi-name" id="bi-name">???</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// STAR FIELD
+// ══════════════════════════════════════════════════════
+(()=>{
+  const cv=document.getElementById('stars-cv');
+  const app=document.getElementById('app');
+  cv.width=430;cv.height=window.innerHeight;
+  const ctx=cv.getContext('2d');
+  const stars=Array.from({length:60},()=>({
+    x:Math.random()*430,y:Math.random()*cv.height*.6,
+    r:Math.random()*.9+.2,a:Math.random()*.6+.2,
+    twinkle:Math.random()*Math.PI*2
+  }));
+  function draw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    const t=Date.now()/1000;
+    stars.forEach(s=>{
+      const a=s.a*(0.6+0.4*Math.sin(s.twinkle+t));
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(255,248,220,${a})`;ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ══════════════════════════════════════════════════════
+// PIXEL SPRITES
+// ══════════════════════════════════════════════════════
+const SPR={
+  orc:{p:['#0000','#3a5c2a','#5a7c3a','#c8b060','#a04030','#ff6040','#2a1e14','#f0d080'],
+    d:[0,0,0,2,2,2,2,0,0,0,0,0,2,2,2,2,2,2,0,0,0,2,2,7,2,2,7,2,2,0,0,2,5,2,2,2,2,5,2,0,0,2,2,2,4,4,2,2,2,0,0,0,1,2,2,2,2,1,0,0,0,1,1,1,2,2,1,1,1,0,0,0,1,3,3,3,3,1,0,0,0,0,3,0,0,0,0,3,0,0,0,0,3,0,0,0,0,3,0,0]},
+  slime:{p:['#0000','#204020','#409040','#60c060','#a0ff80','#ffffff','#102010'],
+    d:[0,0,0,3,3,3,3,0,0,0,0,0,3,4,4,4,4,3,0,0,0,3,4,4,5,5,4,4,3,0,0,3,4,5,5,5,5,4,3,0,0,3,4,4,4,4,4,4,3,0,0,3,3,2,4,4,2,3,3,0,3,3,2,1,1,1,1,2,3,3,3,2,1,1,1,1,1,1,2,3,3,2,1,2,1,1,2,1,2,3,0,3,2,2,2,2,2,2,3,0]},
+  skeleton:{p:['#0000','#e8e0d0','#b0a890','#303030','#c06020','#f0f0e0','#808070'],
+    d:[0,0,1,1,1,1,1,1,0,0,0,1,5,5,5,5,5,5,1,0,0,1,5,3,5,5,3,5,1,0,0,1,5,5,5,5,5,5,1,0,0,0,1,5,2,2,5,1,0,0,0,0,2,1,1,1,1,2,0,0,0,2,4,4,1,1,4,4,2,0,0,0,2,2,2,2,2,2,0,0,0,0,2,6,0,0,6,2,0,0,0,0,2,2,0,0,2,2,0,0]},
+  ice_dragon:{p:['#0000','#a0c8e8','#60a0d0','#204080','#e0f0ff','#ffffff','#80b0d0','#c0e0ff'],
+    d:[0,0,3,0,0,0,0,3,0,0,0,3,1,3,0,0,3,1,3,0,3,1,1,1,3,3,1,1,1,3,3,1,4,1,2,2,1,4,1,3,3,1,1,2,2,2,2,1,1,3,0,3,1,1,2,2,1,1,3,0,0,3,6,1,1,1,1,6,3,0,3,3,3,5,1,1,5,3,3,3,3,0,0,3,1,1,3,0,0,3,3,0,0,0,3,3,0,0,0,3]},
+  giant:{p:['#0000','#706050','#908070','#504030','#c08040','#f0c060','#3a2a1a','#b07050'],
+    d:[0,3,3,3,3,3,3,3,3,0,3,3,2,2,2,2,2,2,3,3,3,2,2,5,2,2,5,2,2,3,3,2,4,2,2,2,2,4,2,3,3,2,2,2,3,3,2,2,2,3,3,3,1,2,2,2,2,1,3,3,3,1,1,7,7,7,7,1,1,3,3,1,3,3,3,3,3,3,1,3,3,3,3,0,0,0,0,3,3,3,3,3,0,0,0,0,0,0,3,3]},
+  dark_knight:{p:['#0000','#1a1a2e','#2a2a4e','#4a4a8e','#c0c0e0','#e0e0ff','#800020','#ff2040'],
+    d:[0,3,3,3,3,3,3,3,3,0,3,3,4,4,4,4,4,4,3,3,3,4,4,5,4,4,5,4,4,3,3,4,6,4,4,4,4,6,4,3,3,4,4,4,1,1,4,4,4,3,3,3,2,4,4,4,4,2,3,3,3,2,2,2,4,4,2,2,2,3,3,2,6,2,2,2,2,6,2,3,3,3,2,2,3,3,2,2,3,3,0,3,3,3,0,0,3,3,3,0]},
+  phoenix:{p:['#0000','#ff4000','#ff8000','#ffb040','#fff080','#ff2000','#c03000','#ffd060'],
+    d:[0,0,0,1,5,5,1,0,0,0,0,0,1,3,3,3,3,1,0,0,0,1,3,7,3,3,7,3,1,0,1,3,3,3,3,3,3,3,3,1,1,3,2,3,4,4,3,2,3,1,0,1,1,3,3,3,3,1,1,0,0,2,1,6,3,3,6,1,2,0,2,6,6,6,1,1,6,6,6,2,6,0,6,0,2,2,0,6,0,6,0,0,0,0,6,6,0,0,0,0]},
+  boss_demon:{p:['#0000','#600010','#a00020','#ff0030','#ff8040','#300008','#ffd060','#200006'],
+    d:[3,0,3,0,0,0,0,3,0,3,3,3,3,2,2,2,2,3,3,3,3,2,2,4,2,2,4,2,2,3,3,2,3,2,2,2,2,3,2,3,3,2,2,2,1,1,2,2,2,3,3,3,1,2,2,2,2,1,3,3,3,1,1,6,1,1,6,1,1,3,3,1,5,1,1,1,1,5,1,3,3,3,1,1,7,7,1,1,3,3,7,3,3,3,0,0,3,3,3,7]},
+  golem:{p:['#0000','#604030','#805040','#a06040','#704820','#c08060','#3a2010','#d09060'],
+    d:[0,0,3,3,3,3,3,3,0,0,0,3,2,2,2,2,2,2,3,0,3,2,2,1,2,2,1,2,2,3,3,2,4,2,2,2,2,4,2,3,3,2,2,2,2,2,2,2,2,3,0,3,1,2,2,2,2,1,3,0,0,3,1,1,1,1,1,1,3,0,0,3,6,3,5,5,3,6,3,0,0,3,3,3,0,0,3,3,3,0,0,0,3,0,0,0,0,3,0,0]},
+  witch:{p:['#0000','#2a0840','#6020a0','#c060ff','#f0e0ff','#1a0530','#ff40a0','#ffe0a0'],
+    d:[0,0,0,1,1,1,1,0,0,0,0,0,1,2,2,2,2,1,0,0,0,1,2,4,2,2,4,2,1,0,0,1,2,2,2,2,2,2,1,0,0,0,3,2,6,6,2,3,0,0,0,0,3,2,2,2,2,3,0,0,0,3,1,1,2,2,1,1,3,0,0,3,7,3,3,3,3,7,3,0,0,3,5,5,3,3,5,5,3,0,0,0,5,0,5,5,0,5,0,0]},
+};
+
+// Player sprite (knight)
+const PLAYER_SPR={
+  p:['#0000','#c0c0e0','#8080c0','#4040a0','#f0d060','#e08020','#ffe0a0','#2040a0','#ff4060'],
+  d:[0,0,0,3,3,3,3,0,0,0,0,0,3,7,7,7,7,3,0,0,0,3,7,6,7,7,6,7,3,0,0,3,7,7,4,4,7,7,3,0,0,0,2,7,7,7,7,2,0,0,0,2,1,1,1,1,1,1,2,0,0,2,1,5,1,1,5,1,2,0,0,2,1,1,1,1,1,1,2,0,0,0,3,3,0,0,3,3,0,0,0,0,3,0,0,0,0,3,0,0],
+};
+
+function getSpritePixels(sp, scale) {
+  // Returns array of {x,y,color} for drawing
+  const W=10,H=10;
+  const result=[];
+  for(let row=0;row<H;row++) for(let col=0;col<W;col++){
+    const ci=sp.d[row*W+col];
+    const c=sp.p[ci];
+    if(!c||c==='#0000') continue;
+    result.push({x:col*scale,y:row*scale,c,w:scale,h:scale});
+  }
+  return result;
+}
+
+function monsterKey(floor,isBoss){
+  if(isBoss) return floor%20===0?'boss_demon':floor%10===0?'phoenix':'dark_knight';
+  const n=['orc','slime','skeleton','ice_dragon','giant','golem','witch'];
+  return n[Math.floor((floor-1)/3)%n.length];
+}
+
+// ══════════════════════════════════════════════════════
+// BATTLE CANVAS ENGINE
+// ══════════════════════════════════════════════════════
+const bcv = document.getElementById('battle-cv');
+const bctx = bcv.getContext('2d');
+
+let bW=0, bH=0;
+function resizeBattleCanvas(){
+  const el=document.getElementById('battle-scene');
+  bW=el.offsetWidth; bH=el.offsetHeight;
+  bcv.width=bW; bcv.height=bH;
+}
+
+// Animation state
+const anim = {
+  // Player
+  playerX:0, playerY:0,
+  playerFrame:0, playerState:'idle', // idle, attack, walk
+  playerDir:1, // 1=right
+  playerMoveT:0,
+  // Enemy
+  enemyX:0, enemyY:0,
+  enemyFrame:0, enemyState:'idle',
+  enemyHitFlash:0,
+  // Effects
+  effects:[],  // {type, x,y, t, maxT, ...}
+  // Camera shake
+  shake:0,
+  t:0,
+};
+
+const SPRITE_SCALE = 5;
+const PLAYER_SCALE = 5;
+
+function initPositions(){
+  anim.playerX = bW * 0.22;
+  anim.playerY = bH * 0.55;
+  anim.enemyX  = bW * 0.72;
+  anim.enemyY  = bH * 0.52;
+}
+
+// Particle/effect system
+function addEffect(type, x, y, opts={}){
+  anim.effects.push({type, x, y, t:0, maxT: opts.maxT||20, ...opts});
+}
+
+function triggerAttack(){
+  // Player lunges forward, slash effect
+  anim.playerState='attack';
+  anim.playerMoveT=0;
+  // Slash particles
+  for(let i=0;i<6;i++){
+    addEffect('slash', anim.enemyX-10+Math.random()*30, anim.enemyY-10+Math.random()*30,
+      {maxT:14, vx:(Math.random()-.5)*3, vy:-Math.random()*2, color:'#ff8040'});
+  }
+}
+
+function triggerHit(isCrit){
+  anim.enemyHitFlash=8;
+  anim.shake=isCrit?8:4;
+  if(isCrit){
+    for(let i=0;i<12;i++){
+      addEffect('spark', anim.enemyX+Math.random()*20-10, anim.enemyY+Math.random()*20-10,
+        {maxT:18, vx:(Math.random()-.5)*5, vy:-Math.random()*4-1, color:'#ffcc00'});
+    }
+    addEffect('crit-text', anim.enemyX, anim.enemyY-20, {maxT:30});
+  }
+}
+
+function triggerDeath(){
+  for(let i=0;i<20;i++){
+    addEffect('spark', anim.enemyX+(Math.random()-.5)*30, anim.enemyY+(Math.random()-.5)*30,
+      {maxT:25, vx:(Math.random()-.5)*6, vy:-Math.random()*5-2, color:`hsl(${Math.random()*60+10},100%,60%)`});
+  }
+  anim.shake=12;
+}
+
+function triggerAutoHit(){
+  addEffect('auto-slash', anim.enemyX, anim.enemyY-5,
+    {maxT:10, vx:0, vy:0, color:'#60c0ff'});
+}
+
+// Ground / environment drawing
+function drawEnvironment(){
+  // Sky gradient
+  const sky=bctx.createLinearGradient(0,0,0,bH);
+  sky.addColorStop(0,'#0d0620');
+  sky.addColorStop(1,'#180830');
+  bctx.fillStyle=sky;
+  bctx.fillRect(0,0,bW,bH);
+
+  // Distant mountains
+  bctx.fillStyle='rgba(30,10,50,.6)';
+  bctx.beginPath();
+  bctx.moveTo(0,bH*.65);
+  for(let x=0;x<=bW;x+=40){
+    const h=bH*.65-Math.sin(x*.04)*bH*.08-Math.sin(x*.02)*bH*.06;
+    bctx.lineTo(x,h);
+  }
+  bctx.lineTo(bW,bH); bctx.lineTo(0,bH); bctx.closePath();
+  bctx.fill();
+
+  // Ground
+  const grd=bctx.createLinearGradient(0,bH*.72,0,bH);
+  grd.addColorStop(0,'#1a0d2e');
+  grd.addColorStop(1,'#0d0618');
+  bctx.fillStyle=grd;
+  bctx.fillRect(0,bH*.72,bW,bH);
+
+  // Ground glow line
+  bctx.strokeStyle='rgba(120,60,200,.35)';
+  bctx.lineWidth=2;
+  bctx.beginPath(); bctx.moveTo(0,bH*.72); bctx.lineTo(bW,bH*.72); bctx.stroke();
+
+  // Floor tiles
+  bctx.strokeStyle='rgba(80,40,130,.2)';
+  bctx.lineWidth=1;
+  for(let x=0;x<bW;x+=32){
+    bctx.beginPath(); bctx.moveTo(x,bH*.72); bctx.lineTo(x,bH); bctx.stroke();
+  }
+}
+
+function drawSpritePx(sp, x, y, scale, flashAlpha=0){
+  const W=10,H=10;
+  for(let row=0;row<H;row++) for(let col=0;col<W;col++){
+    const ci=sp.d[row*W+col];
+    const c=sp.p[ci];
+    if(!c||c==='#0000') continue;
+    if(flashAlpha>0){
+      // Flash white
+      bctx.fillStyle=`rgba(255,255,255,${flashAlpha})`;
+      bctx.fillRect(x+col*scale, y+row*scale, scale, scale);
+    } else {
+      bctx.fillStyle=c;
+      bctx.fillRect(x+col*scale, y+row*scale, scale, scale);
+    }
+  }
+}
+
+function drawPlayer(){
+  const t=anim.t;
+  let px=anim.playerX, py=anim.playerY;
+  // Idle bob
+  if(anim.playerState==='idle'){
+    py+=Math.sin(t*.06)*2;
+  }
+  // Attack lunge
+  if(anim.playerState==='attack'){
+    const prog=Math.min(anim.playerMoveT/8,1);
+    const lunge=Math.sin(prog*Math.PI)*30;
+    px+=lunge;
+    py-=lunge*.2;
+  }
+  const sw=PLAYER_SCALE*10;
+  const sh=PLAYER_SCALE*10;
+  bctx.save();
+  bctx.translate(px-sw/2, py-sh);
+  drawSpritePx(PLAYER_SPR,0,0,PLAYER_SCALE);
+  bctx.restore();
+}
+
+function drawEnemy(){
+  if(!monster) return;
+  const sp=SPR[monster.key]||SPR.orc;
+  const t=anim.t;
+  let ex=anim.enemyX, ey=anim.enemyY;
+  // Idle float
+  ey+=Math.sin(t*.04+1)*3;
+  if(monster.isBoss) ey+=Math.sin(t*.02)*2;
+
+  const ew=SPRITE_SCALE*10, eh=SPRITE_SCALE*10;
+  const flash=anim.enemyHitFlash>0?(anim.enemyHitFlash/8):0;
+
+  bctx.save();
+  bctx.translate(ex-ew/2, ey-eh);
+  // Boss scale up
+  if(monster.isBoss){
+    bctx.translate(ew/2,eh/2);
+    bctx.scale(1.3,1.3);
+    bctx.translate(-ew/2,-eh/2);
+  }
+  // Purple tint for boss
+  if(monster.isBoss && flash===0){
+    // Draw normally then overlay purple
+    drawSpritePx(sp,0,0,SPRITE_SCALE);
+    bctx.fillStyle='rgba(160,0,255,.12)';
+    bctx.fillRect(0,0,ew,eh);
+  } else {
+    drawSpritePx(sp,0,0,SPRITE_SCALE,flash);
+  }
+  bctx.restore();
+
+  // Shadow
+  bctx.save();
+  bctx.globalAlpha=0.3;
+  bctx.fillStyle='#000';
+  bctx.beginPath();
+  bctx.ellipse(ex, anim.enemyY+4, 24*(monster.isBoss?1.3:1), 6, 0, 0, Math.PI*2);
+  bctx.fill();
+  bctx.restore();
+}
+
+function drawEffects(){
+  anim.effects=anim.effects.filter(e=>{
+    e.t++;
+    const prog=e.t/e.maxT;
+    if(prog>=1) return false;
+
+    if(e.type==='slash'||e.type==='spark'){
+      e.x+=e.vx||0; e.y+=e.vy||0;
+      (e.vy=e.vy||0) && (e.vy+=.15); // gravity
+      bctx.save();
+      bctx.globalAlpha=(1-prog)*0.9;
+      bctx.fillStyle=e.color||'#ff8040';
+      const sz=e.type==='slash'?4:3;
+      bctx.fillRect(e.x-sz/2,e.y-sz/2,sz,sz);
+      bctx.restore();
+    }
+    if(e.type==='auto-slash'){
+      bctx.save();
+      bctx.globalAlpha=(1-prog)*0.8;
+      bctx.strokeStyle=e.color||'#60c0ff';
+      bctx.lineWidth=3;
+      const off=prog*20;
+      bctx.beginPath();
+      bctx.moveTo(e.x-15+off, e.y-8);
+      bctx.lineTo(e.x+15+off, e.y+8);
+      bctx.stroke();
+      bctx.restore();
+    }
+    if(e.type==='crit-text'){
+      bctx.save();
+      bctx.globalAlpha=(1-prog);
+      bctx.font=`bold ${14+prog*8}px Georgia`;
+      bctx.fillStyle='#ffcc00';
+      bctx.textAlign='center';
+      bctx.fillText('CRITICAL!', e.x, e.y-prog*20);
+      bctx.restore();
+    }
+    return true;
+  });
+}
+
+// Main render loop
+let lastAutoEffect=0;
+function renderBattle(){
+  if(bW===0||bH===0){resizeBattleCanvas();initPositions();}
+  bctx.clearRect(0,0,bW,bH);
+
+  // Camera shake
+  let sx=0,sy=0;
+  if(anim.shake>0){
+    sx=(Math.random()-.5)*anim.shake;
+    sy=(Math.random()-.5)*anim.shake;
+    anim.shake=Math.max(0,anim.shake-.8);
+    bctx.save();
+    bctx.translate(sx,sy);
+  }
+
+  drawEnvironment();
+  drawPlayer();
+  drawEnemy();
+  drawEffects();
+
+  if(anim.shake>0) bctx.restore();
+
+  // Advance player attack animation
+  if(anim.playerState==='attack'){
+    anim.playerMoveT++;
+    if(anim.playerMoveT>=16) anim.playerState='idle';
+  }
+  if(anim.enemyHitFlash>0) anim.enemyHitFlash--;
+  anim.t++;
+
+  // Auto-attack visual every ~1.5s
+  const now=Date.now();
+  if(monster && getStats().autoDps>0 && now-lastAutoEffect>1200){
+    triggerAutoHit();
+    lastAutoEffect=now;
+  }
+
+  requestAnimationFrame(renderBattle);
+}
+
+window.addEventListener('resize',()=>{ resizeBattleCanvas(); initPositions(); });
+setTimeout(()=>{ resizeBattleCanvas(); initPositions(); renderBattle(); },100);
+
+// ══════════════════════════════════════════════════════
+// STATIC DATA
+// ══════════════════════════════════════════════════════
+const HEROES=[
+  {id:0,em:'🏹',name:'견습 궁수',desc:'기본 원거리',tag:'rogue',bc:12,bdps:1},
+  {id:1,em:'🧙',name:'화염 마법사',desc:'마법 화염',tag:'mage',bc:75,bdps:6},
+  {id:2,em:'🛡️',name:'성기사',desc:'성스러운 검격',tag:'tank',bc:220,bdps:18},
+  {id:3,em:'🗡️',name:'어쌔신',desc:'그림자 암살',tag:'rogue',bc:600,bdps:55},
+  {id:4,em:'🐲',name:'드래곤 기사',desc:'드래곤 탑승',tag:'tank',bc:1800,bdps:160},
+  {id:5,em:'⌛',name:'시간 마법사',desc:'시간 조종',tag:'mage',bc:5500,bdps:500},
+  {id:6,em:'👼',name:'천사 힐러',desc:'성스러운 회복',tag:'support',bc:15000,bdps:1400},
+  {id:7,em:'😈',name:'데몬 헌터',desc:'악마 사냥꾼',tag:'rogue',bc:50000,bdps:4500},
+  {id:8,em:'🌪️',name:'원소 정령',desc:'4원소 지배',tag:'mage',bc:200000,bdps:15000},
+  {id:9,em:'🌟',name:'전설의 용사',desc:'전설의 최강자',tag:'support',bc:1000000,bdps:60000},
+];
+const SKILL_CATS=[
+  {cat:'⚔️ 전투',sub:'클릭 & 치명타',nodes:[
+    {id:'s0',ico:'💥',name:'강타',desc:'클릭 데미지 +25%',max:10,bc:50,eff:'clickDmg',v:.25},
+    {id:'s1',ico:'🎯',name:'치명타',desc:'치명타 확률 +5%',max:10,bc:200,eff:'crit',v:.05},
+    {id:'s2',ico:'🔥',name:'광전사',desc:'클릭시 DPS 5% 추가',max:5,bc:500,eff:'clickDps',v:.05},
+    {id:'s3',ico:'⚡',name:'연격',desc:'치명타 배율 +0.3x',max:8,bc:400,eff:'critMult',v:.3},
+  ]},
+  {cat:'💰 경제',sub:'골드 & 보상',nodes:[
+    {id:'s4',ico:'✨',name:'황금의 손',desc:'골드 +20%',max:10,bc:80,eff:'goldBonus',v:.2},
+    {id:'s5',ico:'🗺️',name:'보물 탐지',desc:'보스 보상 +30%',max:5,bc:300,eff:'bossGold',v:.3},
+    {id:'s6',ico:'💎',name:'상인',desc:'장비 판매가 +25%',max:5,bc:250,eff:'sellBonus',v:.25},
+    {id:'s7',ico:'📈',name:'복리 이자',desc:'오프라인 보상 +40%',max:5,bc:400,eff:'offline',v:.4},
+  ]},
+  {cat:'🛡️ 방치',sub:'자동 전투 강화',nodes:[
+    {id:'s8',ico:'🤖',name:'자동화',desc:'자동 DPS +30%',max:10,bc:150,eff:'autoDps',v:.3},
+    {id:'s9',ico:'🏹',name:'집중사',desc:'영웅 DPS +20%',max:10,bc:500,eff:'heroDps',v:.2},
+    {id:'s10',ico:'♾️',name:'무한의 힘',desc:'모든 보너스 +8%',max:5,bc:2000,eff:'all',v:.08},
+    {id:'s11',ico:'🌪️',name:'공략사',desc:'보스 HP -10%',max:5,bc:800,eff:'bossHp',v:.1},
+  ]},
+];
+const ARTIFACTS=[
+  {ico:'💍',name:'파멸의 반지',eff:'click',desc:'클릭 데미지 +15%/레벨',max:10,bc:500,v:.15},
+  {ico:'🪄',name:'폭풍의 지팡이',eff:'auto',desc:'자동 DPS +20%/레벨',max:10,bc:800,v:.20},
+  {ico:'🪬',name:'황금 부적',eff:'gold',desc:'골드 획득 +25%/레벨',max:8,bc:600,v:.25},
+  {ico:'🐉',name:'용의 심장',eff:'boss',desc:'보스 데미지 +30%/레벨',max:8,bc:1200,v:.30},
+  {ico:'⏳',name:'모래시계',eff:'cd',desc:'스킬 쿨타임 -5%/레벨',max:10,bc:1000,v:.05},
+  {ico:'💫',name:'별의 파편',eff:'critDmg',desc:'치명타 배율 +0.3x/레벨',max:8,bc:1500,v:.3},
+  {ico:'🔮',name:'어둠의 결정',eff:'offline',desc:'오프라인 시간 +1h/레벨',max:5,bc:2000,v:1},
+  {ico:'🍃',name:'생명의 잎',eff:'hero',desc:'영웅 DPS +15%/레벨',max:10,bc:700,v:.15},
+];
+const ACTIVE_SKILLS=[
+  {id:'a0',ico:'🔥',name:'화염 폭풍',desc:'10초 DPS 즉발',cd:15,eff:'burst'},
+  {id:'a1',ico:'⚡',name:'천둥 강타',desc:'현재 HP 25% 피해',cd:25,eff:'pct'},
+  {id:'a2',ico:'✨',name:'황금 광풍',desc:'45초간 골드 3배',cd:90,eff:'gold3x'},
+  {id:'a3',ico:'⏳',name:'시간 가속',desc:'20초간 DPS 5배',cd:60,eff:'haste'},
+  {id:'a4',ico:'💥',name:'신성 폭발',desc:'30초간 데미지 +60%',cd:120,eff:'allBoost'},
+  {id:'a5',ico:'💀',name:'어둠의 저주',desc:'잡몹 즉사',cd:180,eff:'insta'},
+];
+const ITEM_POOL=[
+  {id:'w1',ico:'🗡️',name:'목검',slot:'weapon',rar:'common',atk:2,dps:0,gld:0},
+  {id:'w2',ico:'🔪',name:'철 단검',slot:'weapon',rar:'common',atk:5,dps:1,gld:0},
+  {id:'w3',ico:'🔥',name:'불꽃 검',slot:'weapon',rar:'rare',atk:22,dps:9,gld:0},
+  {id:'w4',ico:'🧊',name:'냉기 창',slot:'weapon',rar:'rare',atk:19,dps:11,gld:0},
+  {id:'w5',ico:'⚡',name:'천둥 도끼',slot:'weapon',rar:'epic',atk:60,dps:32,gld:0},
+  {id:'w6',ico:'🌑',name:'어둠의 검',slot:'weapon',rar:'epic',atk:55,dps:40,gld:0},
+  {id:'w7',ico:'🐲',name:'용 살해검',slot:'weapon',rar:'legend',atk:210,dps:130,gld:0},
+  {id:'w8',ico:'☀️',name:'태양의 검',slot:'weapon',rar:'legend',atk:240,dps:110,gld:0},
+  {id:'a1',ico:'🥋',name:'가죽 갑옷',slot:'armor',rar:'common',atk:0,dps:1,gld:0},
+  {id:'a2',ico:'🛡️',name:'사슬 갑옷',slot:'armor',rar:'common',atk:3,dps:3,gld:0},
+  {id:'a3',ico:'👘',name:'마법 로브',slot:'armor',rar:'rare',atk:8,dps:16,gld:0},
+  {id:'a4',ico:'🐉',name:'드래곤 비늘',slot:'armor',rar:'rare',atk:12,dps:20,gld:0},
+  {id:'a5',ico:'💜',name:'보라 갑옷',slot:'armor',rar:'epic',atk:20,dps:50,gld:0},
+  {id:'a6',ico:'🌌',name:'우주 갑옷',slot:'armor',rar:'epic',atk:18,dps:65,gld:0},
+  {id:'a7',ico:'✨',name:'신성 갑옷',slot:'armor',rar:'legend',atk:60,dps:210,gld:0},
+  {id:'a8',ico:'⚫',name:'심연 갑옷',slot:'armor',rar:'legend',atk:80,dps:180,gld:0},
+  {id:'r1',ico:'💍',name:'돌 반지',slot:'ring',rar:'common',atk:0,dps:0,gld:.05},
+  {id:'r2',ico:'🟡',name:'황동 반지',slot:'ring',rar:'common',atk:1,dps:1,gld:.03},
+  {id:'r3',ico:'❤️',name:'루비 반지',slot:'ring',rar:'rare',atk:5,dps:5,gld:.15},
+  {id:'r4',ico:'💙',name:'사파이어 반지',slot:'ring',rar:'rare',atk:4,dps:7,gld:.12},
+  {id:'r5',ico:'💎',name:'다이아 반지',slot:'ring',rar:'epic',atk:15,dps:20,gld:.30},
+  {id:'r6',ico:'🌟',name:'고대의 반지',slot:'ring',rar:'epic',atk:12,dps:25,gld:.28},
+  {id:'r7',ico:'👑',name:'전설 반지',slot:'ring',rar:'legend',atk:40,dps:85,gld:.60},
+  {id:'r8',ico:'🔮',name:'운명의 반지',slot:'ring',rar:'legend',atk:35,dps:90,gld:.65},
+];
+const GACHA_POOLS=[
+  {id:'g0',name:'일반 뽑기',sub:'기본 장비 뽑기',ico:'🎲',rates:{common:.60,rare:.28,epic:.10,legend:.02},cost1:200,cost10:1800},
+  {id:'g1',name:'프리미엄 뽑기',sub:'더 높은 등급 확률',ico:'💎',rates:{common:.30,rare:.35,epic:.25,legend:.10},cost1:1000,cost10:9000},
+];
+const FLOOR_THEMES=[
+  {name:'오크의 동굴',mobs:['화염 오크','독 슬라임','뼈 언데드'],boss:'동굴의 군주'},
+  {name:'얼음 협곡',mobs:['서리 드래곤','빙결 정령','얼음 거인'],boss:'빙설의 군주'},
+  {name:'마왕의 성',mobs:['어둠의 기사','악마 소환사','성의 수호자'],boss:'마왕의 부관'},
+  {name:'천공의 탑',mobs:['번개 독수리','폭풍 위자드','천계 수문장'],boss:'하늘의 왕'},
+  {name:'심연의 화산',mobs:['용암 골렘','화염 피닉스','지옥 병사'],boss:'화산의 마왕'},
+  {name:'별의 궁전',mobs:['별빛 정령','혜성 기사','달빛 마법사'],boss:'우주의 지배자'},
+];
+
+// Attendance rewards
+const ATTEND_REWARDS=[
+  {ico:'💰',name:'골드 100',give:()=>{G.gold+=100;}},
+  {ico:'💎',name:'골드 300',give:()=>{G.gold+=300;}},
+  {ico:'🗡️',name:'무기 뽑기',give:()=>{const it=ITEM_POOL.filter(x=>x.rar==='rare'&&x.slot==='weapon');const r=it[Math.floor(Math.random()*it.length)];if(r&&G.inventory.length<60)G.inventory.push(r.id);}},
+  {ico:'💰',name:'골드 1000',give:()=>{G.gold+=1000;}},
+  {ico:'🔮',name:'유물 강화권',give:()=>{const i=Math.floor(Math.random()*ARTIFACTS.length);G.artLv[i]=Math.min(G.artLv[i]+1,ARTIFACTS[i].max);}},
+  {ico:'💰',name:'골드 3000',give:()=>{G.gold+=3000;}},
+  {ico:'👑',name:'전설 장비',give:()=>{const it=ITEM_POOL.filter(x=>x.rar==='legend');const r=it[Math.floor(Math.random()*it.length)];if(r&&G.inventory.length<60)G.inventory.push(r.id);}},
+];
+
+// ══════════════════════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════════════════════
+const SAVE_KEY='mage_tower_v4';
+const DS=()=>({
+  gold:0,floor:1,maxFloor:1,
+  prestigeCount:0,prestigeClick:1,prestigeDps:1,prestigeGold:1,
+  totalKills:0,totalDmg:0,totalGold:0,
+  heroLv:Array(HEROES.length).fill(0),
+  skillLv:{},
+  artLv:Array(ARTIFACTS.length).fill(0),
+  inventory:[],equipped:{weapon:null,armor:null,ring:null},
+  skillCd:{},lastSave:Date.now(),
+  goldMult:1,hasteMult:1,allBoost:1,selectedItem:null,
+  waveKills:0,isBossWave:false,
+  // Attendance
+  attendDays:[],   // array of date strings 'YYYY-MM-DD'
+  attendStreak:0,
+  lastAttend:null,
+  // Settings
+  settings:{sfx:true,autoSave:true,darkMode:true},
+});
+let G=DS();
+function initSkillLv(){SKILL_CATS.forEach(c=>c.nodes.forEach(n=>{if(G.skillLv[n.id]===undefined)G.skillLv[n.id]=0;}));}
+
+function saveGame(){
+  const s=Object.assign({},G);
+  s.goldMult=1;s.hasteMult=1;s.allBoost=1;s.selectedItem=null;
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify(s));}catch(e){}
+  const t=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('save-info').textContent='💾 '+t+' 저장됨';
+}
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    G=Object.assign(DS(),JSON.parse(raw));
+    initSkillLv();
+    G.goldMult=1;G.hasteMult=1;G.allBoost=1;G.selectedItem=null;G.skillCd={};
+  }catch(e){console.error(e);}
+}
+setInterval(()=>{if(G.settings?.autoSave!==false)saveGame();},30000);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveGame();});
+window.addEventListener('pagehide',saveGame);
+
+// ══════════════════════════════════════════════════════
+// WAVE / MONSTER SYSTEM
+// ══════════════════════════════════════════════════════
+const MOBS_PER_WAVE=5;
+let monster=null;
+
+function themeFor(f){return FLOOR_THEMES[Math.min(Math.floor((f-1)/6),FLOOR_THEMES.length-1)];}
+function mobHP(f){return Math.max(8,Math.ceil(20*Math.pow(1.32,f-1)));}
+function bossHP(f){return Math.max(50,Math.ceil(80*Math.pow(1.32,f-1)*(1-(G.skillLv['s11']||0)*.1)));}
+
+function spawnNormal(){
+  const f=G.floor,th=themeFor(f);
+  const name=th.mobs[G.waveKills%3];
+  const hp=mobHP(f);
+  monster={name,hp,maxHp:hp,level:f,reward:Math.ceil(hp*.10),key:monsterKey(f,false),isBoss:false};
+  G.isBossWave=false;
+  updateWaveUI();
+  updateEnemyPlate();
+}
+function spawnBoss(){
+  const f=G.floor,th=themeFor(f);
+  const hp=bossHP(f);
+  monster={name:'👑 '+th.boss,hp,maxHp:hp,level:f,reward:Math.ceil(hp*.5),key:monsterKey(f,true),isBoss:true};
+  G.isBossWave=true;
+  updateWaveUI();
+  updateEnemyPlate();
+  showBossIntro(th.boss);
+}
+function updateWaveUI(){
+  const wi=document.getElementById('wave-inner');
+  const wt=document.getElementById('wave-txt');
+  const fb=document.getElementById('floor-badge');
+  fb.textContent=G.floor+'층 · '+themeFor(G.floor).name;
+  document.getElementById('hd-floor').textContent=G.floor;
+  if(G.isBossWave){
+    wi.className='wave-inner b';wi.style.width='100%';
+    wt.textContent='👑 BOSS WAVE';
+  } else {
+    wi.className='wave-inner n';
+    wi.style.width=(G.waveKills/MOBS_PER_WAVE*100)+'%';
+    wt.textContent='웨이브 '+(G.waveKills+1)+'/'+MOBS_PER_WAVE;
+  }
+}
+function updateEnemyPlate(){
+  if(!monster) return;
+  const en=document.getElementById('ep-name');
+  en.textContent=monster.name+' Lv.'+monster.level;
+  en.className='ep-name'+(monster.isBoss?' boss':'');
+  const pct=Math.max(0,monster.hp/monster.maxHp*100);
+  const fill=document.getElementById('ep-hp-fill');
+  fill.style.width=pct+'%';
+  fill.className='ep-hp-fill '+(monster.isBoss?'b':'n');
+  document.getElementById('ep-hp-txt').textContent=fmt(Math.max(0,monster.hp))+' / '+fmt(monster.maxHp);
+}
+function dealDamage(dmg){
+  if(!monster) return;
+  monster.hp=Math.max(0,monster.hp-dmg);
+  G.totalDmg+=dmg;
+  updateEnemyPlate();
+  if(monster.hp<=0) onKill();
+}
+function onKill(){
+  const stats=getStats();
+  const reward=Math.ceil(monster.reward*stats.goldBonus);
+  G.gold+=reward;G.totalGold+=reward;G.totalKills++;
+  if(Math.random()<(monster.isBoss?.45:.05)) dropItem();
+  triggerDeath();
+  if(monster.isBoss){
+    showClear('👑 BOSS CLEAR!');
+    G.floor++;if(G.floor>G.maxFloor)G.maxFloor=G.floor;
+    G.waveKills=0;G.isBossWave=false;
+    setTimeout(()=>{hideClear();spawnNormal();},900);
+  } else {
+    G.waveKills++;
+    if(G.waveKills>=MOBS_PER_WAVE){
+      showClear('⚔️ WAVE CLEAR!');
+      setTimeout(()=>{hideClear();spawnBoss();},700);
+    } else {
+      updateWaveUI();
+      setTimeout(()=>spawnNormal(),250);
+    }
+  }
+  updateHeader();
+}
+
+// ══════════════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════════════
+function getStats(){
+  let skClick=1,skCrit=0,skCritMult=0,skGold=1,skAuto=1,skHero=1,skAll=1,skOffline=1;
+  SKILL_CATS.forEach(c=>c.nodes.forEach(n=>{
+    const lv=G.skillLv[n.id]||0;if(!lv) return;
+    if(n.eff==='clickDmg') skClick*=1+n.v*lv;
+    if(n.eff==='crit') skCrit+=n.v*lv;
+    if(n.eff==='critMult') skCritMult+=n.v*lv;
+    if(n.eff==='goldBonus') skGold*=1+n.v*lv;
+    if(n.eff==='autoDps') skAuto*=1+n.v*lv;
+    if(n.eff==='heroDps') skHero*=1+n.v*lv;
+    if(n.eff==='all') skAll*=1+n.v*lv;
+    if(n.eff==='offline') skOffline*=1+n.v*lv;
+  }));
+  let artClick=1,artAuto=1,artGold=1,artBoss=1,artCd=1,artCritMult=0,artHero=1;
+  ARTIFACTS.forEach((a,i)=>{
+    const lv=G.artLv[i];if(!lv) return;
+    if(a.eff==='click') artClick*=1+a.v*lv;
+    if(a.eff==='auto') artAuto*=1+a.v*lv;
+    if(a.eff==='gold') artGold*=1+a.v*lv;
+    if(a.eff==='boss') artBoss*=1+a.v*lv;
+    if(a.eff==='cd') artCd=Math.max(.3,artCd-a.v*lv);
+    if(a.eff==='critDmg') artCritMult+=a.v*lv;
+    if(a.eff==='hero') artHero*=1+a.v*lv;
+  });
+  let eqAtk=0,eqDps=0,eqGold=1;
+  ['weapon','armor','ring'].forEach(s=>{
+    const id=G.equipped[s];if(!id) return;
+    const it=ITEM_POOL.find(x=>x.id===id);if(!it) return;
+    eqAtk+=it.atk||0;eqDps+=it.dps||0;eqGold*=1+(it.gld||0);
+  });
+  let heroDps=0;
+  HEROES.forEach((h,i)=>{const lv=G.heroLv[i];if(!lv) return;heroDps+=h.bdps*Math.pow(1.12,lv-1)*lv;});
+  heroDps=Math.ceil(heroDps*skHero*artHero*skAll*G.prestigeDps);
+  const autoDps=Math.ceil((heroDps+eqDps)*skAuto*artAuto*skAll*G.hasteMult*G.allBoost);
+  const clickBase=Math.max(1,Math.ceil(autoDps*.08+eqAtk+1));
+  const clickDmg=Math.ceil(clickBase*skClick*artClick*skAll*G.prestigeClick*G.allBoost);
+  const goldBonus=skGold*artGold*eqGold*G.prestigeGold*G.goldMult;
+  const critChance=Math.min(.75,skCrit);
+  const critMult=2.5+skCritMult+artCritMult;
+  return{autoDps,clickDmg,goldBonus,critChance,critMult,cdMult:artCd,bossDmgMult:artBoss,offlineBonus:skOffline,maxOfflineH:4+(G.artLv[6]||0)};
+}
+
+// ══════════════════════════════════════════════════════
+// CLICK HANDLER
+// ══════════════════════════════════════════════════════
+function onTapScene(evt){
+  if(!monster) return;
+  const stats=getStats();
+  let dmg=stats.clickDmg;
+  let isCrit=false;
+  if(monster.isBoss) dmg=Math.ceil(dmg*stats.bossDmgMult);
+  if(Math.random()<stats.critChance){dmg=Math.ceil(dmg*stats.critMult);isCrit=true;}
+  dealDamage(dmg);
+  triggerAttack();
+  triggerHit(isCrit);
+
+  // Floating damage text
+  const rect=document.getElementById('battle-scene').getBoundingClientRect();
+  const pop=document.createElement('div');
+  pop.className='dmgpop';
+  pop.style.left=(rect.left+bW*.65+(Math.random()-.5)*40)+'px';
+  pop.style.top=(rect.top+bH*.3)+'px';
+  pop.style.fontSize=isCrit?'18px':'13px';
+  pop.style.color=isCrit?'#ffcc00':'#ff7070';
+  pop.textContent=(isCrit?'💥 ':'-')+fmt(dmg);
+  document.body.appendChild(pop);
+  setTimeout(()=>pop.remove(),800);
+}
+
+// ══════════════════════════════════════════════════════
+// AUTO BATTLE
+// ══════════════════════════════════════════════════════
+setInterval(()=>{
+  if(!monster) return;
+  const stats=getStats();
+  if(stats.autoDps>0){
+    let dmg=stats.autoDps;
+    if(monster.isBoss) dmg=Math.ceil(dmg*stats.bossDmgMult);
+    dealDamage(dmg);
+  }
+  let changed=false;
+  Object.keys(G.skillCd).forEach(k=>{if(G.skillCd[k]>0){G.skillCd[k]--;changed=true;}});
+  if(changed) renderActiveSkills();
+},1000);
+setInterval(()=>{updateHeader();renderBonusWrap();},2000);
+
+// ══════════════════════════════════════════════════════
+// OFFLINE
+// ══════════════════════════════════════════════════════
+let pendingOffline=0;
+function checkOffline(){
+  const now=Date.now();
+  const elapsed=(now-(G.lastSave||now))/1000;
+  G.lastSave=now;
+  if(elapsed<30) return;
+  const stats=getStats();
+  const cap=Math.min(elapsed,stats.maxOfflineH*3600);
+  pendingOffline=Math.ceil(stats.autoDps*cap*.3*stats.offlineBonus*stats.goldBonus);
+  if(pendingOffline>0){
+    document.getElementById('offline-pill').style.display='block';
+    document.getElementById('offline-pill').textContent='⏰ +💰'+fmt(pendingOffline);
+  }
+}
+function claimOffline(){
+  if(!pendingOffline) return;
+  G.gold+=pendingOffline;G.totalGold+=pendingOffline;
+  notify('💰 오프라인 보상! +'+fmt(pendingOffline)+'G');
+  pendingOffline=0;
+  document.getElementById('offline-pill').style.display='none';
+  updateHeader();
+}
+
+// ══════════════════════════════════════════════════════
+// ACTIVE SKILLS
+// ══════════════════════════════════════════════════════
+function renderActiveSkills(){
+  const stats=getStats();
+  const el=document.getElementById('askgrid');
+  if(!el) return;
+  el.innerHTML='';
+  ACTIVE_SKILLS.forEach(sk=>{
+    const cd=G.skillCd[sk.id]||0;
+    const realCd=Math.ceil(sk.cd*stats.cdMult);
+    const d=document.createElement('div');
+    d.className='ascard'+(cd>0?' cd':'');
+    d.innerHTML=`<div class="as-ico">${sk.ico}</div>
+      <div class="as-name">${sk.name}</div>
+      <div class="as-desc">${sk.desc}</div>
+      ${cd>0?`<div class="cd-ov">${cd}s</div>`:`<div style="font-size:7px;color:var(--dim);margin-top:1px">CD:${realCd}s</div>`}`;
+    d.onclick=()=>castSkill(sk.id);
+    el.appendChild(d);
+  });
+}
+function castSkill(id){
+  if((G.skillCd[id]||0)>0) return;
+  const stats=getStats();
+  const sk=ACTIVE_SKILLS.find(s=>s.id===id);
+  const realCd=Math.ceil(sk.cd*stats.cdMult);
+  G.skillCd[id]=realCd;
+  if(sk.eff==='burst'){dealDamage(stats.autoDps*10+stats.clickDmg*15);notify('🔥 화염 폭풍!');}
+  else if(sk.eff==='pct'){if(monster)dealDamage(Math.ceil(monster.maxHp*.25));notify('⚡ 천둥 강타!');}
+  else if(sk.eff==='gold3x'){G.goldMult=3;notify('✨ 45초 골드 3배!');setTimeout(()=>G.goldMult=1,45000);}
+  else if(sk.eff==='haste'){G.hasteMult=5;notify('⏳ 20초 DPS 5배!');setTimeout(()=>G.hasteMult=1,20000);}
+  else if(sk.eff==='allBoost'){G.allBoost=1.6;notify('💥 30초 데미지 +60%!');setTimeout(()=>G.allBoost=1,30000);}
+  else if(sk.eff==='insta'){if(!monster||monster.isBoss){notify('❌ 보스 불가!');G.skillCd[id]=0;return;}dealDamage(monster.hp);notify('💀 즉사!');}
+  renderActiveSkills();
+}
+function renderBonusWrap(){
+  const stats=getStats();
+  const el=document.getElementById('bonus-wrap');
+  if(!el) return;
+  el.innerHTML=`<span style="font-size:9px;padding:2px 7px;border-radius:8px;background:rgba(0,0,0,.4);border:1px solid var(--br);color:var(--em)">⚔️ ${fmt(stats.clickDmg)}/탭</span>
+    <span style="font-size:9px;padding:2px 7px;border-radius:8px;background:rgba(0,0,0,.4);border:1px solid var(--br);color:var(--em)">🌀 ${fmt(stats.autoDps)}/s</span>
+    <span style="font-size:9px;padding:2px 7px;border-radius:8px;background:rgba(0,0,0,.4);border:1px solid var(--br);color:var(--em)">💰 x${stats.goldBonus.toFixed(2)}</span>
+    <span style="font-size:9px;padding:2px 7px;border-radius:8px;background:rgba(0,0,0,.4);border:1px solid var(--br);color:var(--em)">🎯 ${(stats.critChance*100).toFixed(0)}% 치명타</span>`;
+}
+
+// ══════════════════════════════════════════════════════
+// HEROES
+// ══════════════════════════════════════════════════════
+function heroCost(i){return Math.ceil(HEROES[i].bc*Math.pow(1.14,G.heroLv[i]));}
+function renderHeroes(){
+  const el=document.getElementById('hlist');if(!el)return;el.innerHTML='';
+  HEROES.forEach((h,i)=>{
+    const lv=G.heroLv[i],cost=heroCost(i),can=G.gold>=cost;
+    const dps=lv?Math.ceil(h.bdps*Math.pow(1.12,lv-1)*lv):0;
+    const d=document.createElement('div');
+    d.className='hcard'+(lv?' active':can?'':' locked');
+    d.innerHTML=`<div class="hav">${h.em}</div>
+      <div class="hinfo">
+        <div class="hn">${h.name}<span class="htag ${h.tag}">${h.tag}</span><span style="color:var(--dim);font-size:8px;margin-left:4px">Lv.${lv}</span></div>
+        <div class="hd">${h.desc} · ${lv?fmt(dps)+'/s':'미고용'}</div>
+        <div class="hlv"><div class="hlvf" style="width:${Math.min(lv/100*100,100)}%"></div></div>
+      </div>
+      <button class="hbtn ${can?'':'na'}" onclick="upgradeHero(${i})">${lv?'강화':'고용'}<span class="c">💰${fmt(cost)}</span></button>`;
+    el.appendChild(d);
+  });
+}
+function upgradeHero(i){
+  const cost=heroCost(i);
+  if(G.gold<cost){notify('골드 부족!');return;}
+  G.gold-=cost;G.heroLv[i]++;
+  updateHeader();renderHeroes();
+}
+
+// ══════════════════════════════════════════════════════
+// SKILL TREE
+// ══════════════════════════════════════════════════════
+function skillCost(n){return Math.ceil(n.bc*Math.pow(1.5,G.skillLv[n.id]||0));}
+function renderSkillTree(){
+  const el=document.getElementById('sktree');if(!el)return;el.innerHTML='';
+  SKILL_CATS.forEach(c=>{
+    const sec=document.createElement('div');sec.className='skcat';
+    sec.innerHTML=`<div class="skcat-hdr"><span style="font-size:14px">${c.cat.split(' ')[0]}</span><span class="skcat-name">${c.cat}</span><span class="skcat-sub">${c.sub}</span></div>`;
+    const grid=document.createElement('div');grid.className='sknodes';
+    c.nodes.forEach(n=>{
+      const lv=G.skillLv[n.id]||0,maxed=lv>=n.max,cost=skillCost(n),can=G.gold>=cost;
+      const nd=document.createElement('div');
+      nd.className='sknode '+(maxed?'maxed':lv>0?'unlocked':can?'':'locked');
+      nd.innerHTML=`<div class="sn-ico">${n.ico}</div>
+        <div class="sn-name">${n.name}${lv>0?` <span style="color:var(--em)">${lv}/${n.max}</span>`:''}</div>
+        <div class="sn-desc">${n.desc}</div>
+        <div class="sn-bar"><div class="sn-fill" style="width:${(lv/n.max)*100}%"></div></div>
+        <div class="sn-cost">${maxed?'✅ 최대':'💰'+fmt(cost)}</div>`;
+      nd.onclick=()=>upgradeSkill(n);
+      grid.appendChild(nd);
+    });
+    sec.appendChild(grid);el.appendChild(sec);
+  });
+}
+function upgradeSkill(n){
+  const lv=G.skillLv[n.id]||0;
+  if(lv>=n.max){notify('이미 최대!');return;}
+  const cost=skillCost(n);
+  if(G.gold<cost){notify('골드 부족!');return;}
+  G.gold-=cost;G.skillLv[n.id]=lv+1;
+  notify('✨ '+n.name+' Lv.'+(lv+1)+'!');
+  updateHeader();renderSkillTree();
+}
+
+// ══════════════════════════════════════════════════════
+// GACHA
+// ══════════════════════════════════════════════════════
+const RAR_COL={common:'var(--dim)',rare:'#6090ff',epic:'#c080ff',legend:'var(--gold)'};
+const RAR_KO={common:'일반',rare:'희귀',epic:'영웅',legend:'전설'};
+function rollItem(pool){
+  const r=Math.random();
+  let rar=r<pool.rates.legend?'legend':r<pool.rates.legend+pool.rates.epic?'epic':r<pool.rates.legend+pool.rates.epic+pool.rates.rare?'rare':'common';
+  const cands=ITEM_POOL.filter(x=>x.rar===rar);
+  return cands[Math.floor(Math.random()*cands.length)];
+}
+function renderGacha(){
+  const el=document.getElementById('gacha-body');if(!el) return;
+  el.innerHTML='';
+  GACHA_POOLS.forEach(pool=>{
+    const can1=G.gold>=pool.cost1,can10=G.gold>=pool.cost10;
+    el.innerHTML+=`<div class="gbox">
+      <div class="gbox-hdr"><div class="gbox-ico">${pool.ico}</div>
+        <div><div class="gbox-title">${pool.name}</div><div class="gbox-sub">${pool.sub}</div></div></div>
+      <div class="gbox-rates">
+        <div class="rate-item"><div class="ri">⚪</div><div class="rn common">일반</div><div class="rp common">${(pool.rates.common*100).toFixed(0)}%</div></div>
+        <div class="rate-item"><div class="ri">🔵</div><div class="rn rare">희귀</div><div class="rp rare">${(pool.rates.rare*100).toFixed(0)}%</div></div>
+        <div class="rate-item"><div class="ri">🟣</div><div class="rn epic">영웅</div><div class="rp epic">${(pool.rates.epic*100).toFixed(0)}%</div></div>
+        <div class="rate-item"><div class="ri">🟡</div><div class="rn legend">전설</div><div class="rp legend">${(pool.rates.legend*100).toFixed(0)}%</div></div>
+      </div>
+      <div class="gbox-btns">
+        <button class="gbtn g1 ${can1?'':'na'}" onclick="doGacha('${pool.id}',1)">1회 뽑기<span class="cost">💰${fmt(pool.cost1)}</span></button>
+        <button class="gbtn g10 ${can10?'':'na'}" onclick="doGacha('${pool.id}',10)">10연 뽑기<span class="cost">💰${fmt(pool.cost10)}</span></button>
+      </div></div>`;
+  });
+}
+function doGacha(poolId,count){
+  const pool=GACHA_POOLS.find(p=>p.id===poolId);
+  const totalCost=count===1?pool.cost1:pool.cost10;
+  if(G.gold<totalCost){notify('골드 부족!');return;}
+  G.gold-=totalCost;
+  const items=[];
+  for(let i=0;i<count;i++){const it=rollItem(pool);if(it){items.push(it);if(G.inventory.length<60)G.inventory.push(it.id);}}
+  showGachaResult(items);
+  updateHeader();
+}
+function showGachaResult(items){
+  const ov=document.getElementById('gr-ov');
+  const grid=document.getElementById('gr-grid');
+  const hasLegend=items.some(i=>i.rar==='legend'),hasEpic=items.some(i=>i.rar==='epic');
+  document.getElementById('gr-title').textContent=hasLegend?'🌟 전설 획득!!':hasEpic?'💜 영웅 획득!':'✨ 획득!';
+  grid.style.gridTemplateColumns=items.length===1?'1fr 1fr 1fr':'repeat(5,1fr)';
+  grid.innerHTML='';
+  items.forEach((it,idx)=>{
+    const d=document.createElement('div');
+    d.className='gr-item '+it.rar;
+    d.style.animationDelay=(idx*.07)+'s';
+    d.innerHTML=`<div class="gr-ico">${it.ico}</div><div class="gr-name">${it.name}</div><div class="gr-rar" style="color:${RAR_COL[it.rar]}">${RAR_KO[it.rar]}</div>`;
+    grid.appendChild(d);
+  });
+  ov.classList.remove('hidden');
+}
+function closeGachaResult(){document.getElementById('gr-ov').classList.add('hidden');}
+
+// ══════════════════════════════════════════════════════
+// EQUIPMENT
+// ══════════════════════════════════════════════════════
+const SLOT_ICO={weapon:'⚔️',armor:'🛡️',ring:'💍'};
+const SLOT_KO={weapon:'무기',armor:'방어구',ring:'반지'};
+function renderEquip(){renderSlots();renderInv();renderItemDetail();}
+function renderSlots(){
+  const el=document.getElementById('eslots');if(!el)return;el.innerHTML='';
+  ['weapon','armor','ring'].forEach(slot=>{
+    const id=G.equipped[slot],it=id?ITEM_POOL.find(x=>x.id===id):null;
+    const d=document.createElement('div');
+    d.className='eslot'+(it?' filled '+it.rar:'');
+    if(it){d.innerHTML=`<div class="eslot-ico">${it.ico}</div><div class="eslot-name">${it.name}</div><div class="eslot-stat">${it.atk?'+'+it.atk+'A ':''} ${it.dps?'+'+it.dps+'D ':''} ${it.gld?'+'+(it.gld*100).toFixed(0)+'%G ':''}</div>`;
+      d.onclick=()=>{G.equipped[slot]=null;notify('해제');renderEquip();updateHeader();};}
+    else{d.innerHTML=`<div class="eslot-ico" style="font-size:20px;opacity:.3">${SLOT_ICO[slot]}</div><div class="eslot-empty">${SLOT_KO[slot]}<br>없음</div>`;}
+    el.appendChild(d);
+  });
+}
+function renderInv(){
+  const el=document.getElementById('inv-grid');if(!el)return;
+  const cnt=document.getElementById('inv-count');if(cnt)cnt.textContent=G.inventory.length;
+  el.innerHTML='';
+  if(!G.inventory.length){el.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--dim);font-size:10px;padding:16px;font-style:italic">인벤토리 비어있음<br>뽑기 또는 드롭으로 아이템 획득</div>';return;}
+  G.inventory.forEach((id,idx)=>{
+    const it=ITEM_POOL.find(x=>x.id===id);if(!it)return;
+    const d=document.createElement('div');
+    d.className='iitem '+it.rar+(G.selectedItem===idx?' sel':'');
+    d.innerHTML=`<div class="rdot ${it.rar}"></div><div class="ii-ico">${it.ico}</div><div class="ii-name">${it.name}</div>`;
+    d.onclick=()=>{G.selectedItem=G.selectedItem===idx?null:idx;renderInv();renderItemDetail();};
+    el.appendChild(d);
+  });
+}
+function renderItemDetail(){
+  const el=document.getElementById('idetail-area');if(!el)return;
+  if(G.selectedItem===null||G.selectedItem===undefined){el.innerHTML='';return;}
+  const id=G.inventory[G.selectedItem];if(!id){el.innerHTML='';return;}
+  const it=ITEM_POOL.find(x=>x.id===id);if(!it){el.innerHTML='';return;}
+  const stats=getStats();
+  const sp={common:30,rare:200,epic:1000,legend:5000}[it.rar];
+  const sell=Math.ceil(sp*(1+(G.skillLv['s6']||0)*.25)*stats.goldBonus);
+  el.innerHTML=`<div class="idetail">
+    <div class="id-ico">${it.ico}</div>
+    <div class="id-name">${it.name}</div>
+    <div class="id-rar" style="color:${RAR_COL[it.rar]}">${RAR_KO[it.rar]} · ${SLOT_KO[it.slot]}</div>
+    <div class="id-stats">
+      ${it.atk?`<div class="id-srow"><span class="k">⚔️ 클릭 데미지</span><span class="v">+${it.atk}</span></div>`:''}
+      ${it.dps?`<div class="id-srow"><span class="k">🌀 자동 DPS</span><span class="v">+${it.dps}</span></div>`:''}
+      ${it.gld?`<div class="id-srow"><span class="k">💰 골드 보너스</span><span class="v">+${(it.gld*100).toFixed(0)}%</span></div>`:''}
+    </div>
+    <div class="id-btns">
+      <button class="idbtn equip" onclick="equipItem(${G.selectedItem})">✅ 장착</button>
+      <button class="idbtn sell" onclick="sellItem(${G.selectedItem},${sell})">💰 ${fmt(sell)}G 판매</button>
+    </div></div>`;
+}
+function equipItem(idx){
+  const id=G.inventory[idx];const it=ITEM_POOL.find(x=>x.id===id);if(!it) return;
+  G.equipped[it.slot]=it.id;notify('✅ '+it.name+' 장착!');G.selectedItem=null;renderEquip();updateHeader();
+}
+function sellItem(idx,price){
+  G.gold+=price;G.totalGold+=price;G.inventory.splice(idx,1);
+  G.selectedItem=null;notify('💰 판매! +'+fmt(price)+'G');renderEquip();updateHeader();
+}
+
+// ══════════════════════════════════════════════════════
+// ARTIFACTS
+// ══════════════════════════════════════════════════════
+function artCost(i){return Math.ceil(ARTIFACTS[i].bc*Math.pow(1.8,G.artLv[i]));}
+function renderArtifacts(){
+  const el=document.getElementById('art-grid');if(!el)return;el.innerHTML='';
+  ARTIFACTS.forEach((a,i)=>{
+    const lv=G.artLv[i],cost=artCost(i),can=G.gold>=cost,maxed=lv>=a.max;
+    const d=document.createElement('div');
+    d.className='acard'+(lv>0?' owned':'')+(lv>=5?' high':'');
+    d.innerHTML=`<div class="a-ico">${a.ico}</div>
+      <div class="a-name">${a.name}${lv>0?` <span style="color:var(--em);font-size:8px">Lv.${lv}</span>`:''}</div>
+      <div class="a-eff">${a.desc}</div>
+      <div class="a-bar"><div class="a-fill" style="width:${(lv/a.max)*100}%"></div></div>
+      <button class="abtn ${can&&!maxed?'':'na'}" onclick="upgradeArt(${i})">${maxed?'✅ 최대':'⬆️ 💰'+fmt(cost)}</button>`;
+    el.appendChild(d);
+  });
+}
+function upgradeArt(i){
+  if(G.artLv[i]>=ARTIFACTS[i].max){notify('이미 최대!');return;}
+  const cost=artCost(i);
+  if(G.gold<cost){notify('골드 부족!');return;}
+  G.gold-=cost;G.artLv[i]++;
+  notify('🔮 '+ARTIFACTS[i].name+' Lv.'+G.artLv[i]+'!');
+  updateHeader();renderArtifacts();
+}
+
+// ══════════════════════════════════════════════════════
+// PRESTIGE
+// ══════════════════════════════════════════════════════
+function renderPrestige(){
+  const can=G.maxFloor>=15;
+  const btn=document.getElementById('prestige-btn');if(!btn)return;
+  btn.className='prestige-btn'+(can?'':' disabled');
+  btn.textContent=can?`✨ 전생 (${G.prestigeCount}회 → ${G.prestigeCount+1}회)`:`✨ 전생 (${G.maxFloor}/15층)`;
+  const prev=document.getElementById('prestige-preview');
+  if(prev) prev.textContent=can?`전생 후: 클릭x${(G.prestigeClick*1.5).toFixed(2)} · DPS x${(G.prestigeDps*1.5).toFixed(2)} · 골드x${(G.prestigeGold*1.3).toFixed(2)}`:'';
+  const kills=document.getElementById('ps-kills');if(kills)kills.textContent=fmt(G.totalKills);
+  const dmg=document.getElementById('ps-dmg');if(dmg)dmg.textContent=fmt(G.totalDmg);
+  const gold=document.getElementById('ps-gold');if(gold)gold.textContent=fmt(G.totalGold);
+  const floor=document.getElementById('ps-floor');if(floor)floor.textContent=G.maxFloor;
+}
+function doPrestige(){
+  if(G.maxFloor<15){notify('15층 달성 후 가능!');return;}
+  if(!confirm('전생하시겠습니까?\n유물 유지 + 영구 보너스!\n클릭x1.5 · DPS x1.5 · 골드x1.3')) return;
+  G.prestigeClick*=1.5;G.prestigeDps*=1.5;G.prestigeGold*=1.3;G.prestigeCount++;
+  G.gold=0;G.floor=1;G.waveKills=0;G.isBossWave=false;
+  G.heroLv=Array(HEROES.length).fill(0);
+  SKILL_CATS.forEach(c=>c.nodes.forEach(n=>{G.skillLv[n.id]=0;}));
+  G.inventory=[];G.equipped={weapon:null,armor:null,ring:null};
+  G.skillCd={};G.goldMult=1;G.hasteMult=1;G.allBoost=1;G.selectedItem=null;
+  spawnNormal();saveGame();
+  updateHeader();notify('✨ 전생 완료!');
+}
+
+// ══════════════════════════════════════════════════════
+// ATTENDANCE
+// ══════════════════════════════════════════════════════
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function hasAttendedToday(){return G.attendDays&&G.attendDays.includes(todayStr());}
+function renderAttendance(){
+  const el=document.getElementById('attend-body');if(!el)return;
+  const today=todayStr();
+  const canClaim=!hasAttendedToday();
+  const streak=G.attendStreak||0;
+  let html=`<div class="attend-streak">🔥 연속 출석 ${streak}일</div>`;
+  html+='<div class="attend-grid">';
+  for(let i=0;i<7;i++){
+    const r=ATTEND_REWARDS[i];
+    const claimed=G.attendDays&&G.attendDays.length>i;
+    const isToday=i===Math.min(streak,6);
+    const cls=claimed?'done':isToday&&canClaim?'today':'future';
+    html+=`<div class="attend-day ${cls}">
+      <div class="ad-num">${i+1}일</div>
+      ${claimed?`<div class="ad-done">✅</div>`:`<div class="ad-ico">${r.ico}</div>`}
+      <div style="font-size:7px;color:var(--dim);margin-top:1px">${r.name}</div>
+    </div>`;
+  }
+  html+='</div>';
+  html+=`<button class="attend-claim-btn ${canClaim?'':'na'}" onclick="claimAttendance()">${canClaim?'✅ 출석 체크 (보상 수령)':'오늘 이미 출석함 ✓'}</button>`;
+  el.innerHTML=html;
+  // Hide badge if can't claim
+  const badge=document.getElementById('attend-badge');
+  if(badge) badge.style.display=canClaim?'inline':'none';
+}
+function claimAttendance(){
+  if(hasAttendedToday()){notify('오늘 이미 출석했습니다!');return;}
+  G.attendDays=G.attendDays||[];
+  G.attendDays.push(todayStr());
+  G.attendStreak=(G.attendStreak||0)+1;
+  // Give reward for streak day (capped at 7)
+  const idx=Math.min(G.attendStreak-1,6);
+  ATTEND_REWARDS[idx].give();
+  notify('📅 출석 완료! '+ATTEND_REWARDS[idx].ico+' '+ATTEND_REWARDS[idx].name+' 획득!');
+  saveGame();updateHeader();
+  renderAttendance();
+}
+
+// ══════════════════════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════════════════════
+function renderSettings(){
+  const el=document.getElementById('settings-body');if(!el)return;
+  const s=G.settings||{};
+  el.innerHTML=`
+    <div class="setting-row">
+      <div><div class="setting-lbl">자동 저장</div><div class="setting-sub">30초마다 자동으로 저장합니다</div></div>
+      <button class="toggle ${s.autoSave!==false?'on':''}" onclick="toggleSetting('autoSave',this)"></button>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-lbl">효과음</div><div class="setting-sub">전투 효과음 (준비 중)</div></div>
+      <button class="toggle ${s.sfx!==false?'on':''}" onclick="toggleSetting('sfx',this)"></button>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-lbl">저장 데이터 초기화</div><div class="setting-sub">⚠️ 모든 진행 삭제</div></div>
+      <button class="del-btn" onclick="resetGame()">초기화</button>
+    </div>
+    <div class="setting-row">
+      <div><div class="setting-lbl">지금 저장</div><div class="setting-sub" id="save-now-info">수동 저장</div></div>
+      <button class="del-btn" style="border-color:var(--em);color:#80ff90;background:linear-gradient(135deg,#1a3010,#204020)" onclick="saveGame();notify('💾 저장 완료!')">저장</button>
+    </div>`;
+}
+function toggleSetting(key,btn){
+  G.settings=G.settings||{};
+  G.settings[key]=!(G.settings[key]!==false);
+  btn.classList.toggle('on');
+}
+function resetGame(){
+  if(!confirm('정말 모든 데이터를 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다!')) return;
+  localStorage.removeItem(SAVE_KEY);
+  G=DS();initSkillLv();
+  spawnNormal();updateHeader();
+  notify('🔄 초기화 완료!');
+}
+
+// ══════════════════════════════════════════════════════
+// MODAL SYSTEM
+// ══════════════════════════════════════════════════════
+const MODAL_RENDER={
+  heroes:renderHeroes,
+  skills:renderSkillTree,
+  gacha:renderGacha,
+  equip:renderEquip,
+  artifact:renderArtifacts,
+  prestige:renderPrestige,
+  battle:()=>{renderActiveSkills();renderBonusWrap();},
+};
+function openModal(name){
+  // Close all modals first
+  document.querySelectorAll('.modal-backdrop').forEach(m=>{
+    if(m.id!=='menu-ov') m.classList.add('hidden');
+  });
+  const el=document.getElementById('modal-'+name);
+  if(!el) return;
+  el.classList.remove('hidden');
+  // Update active nav
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const navBtn=document.getElementById('nav-'+name);
+  if(navBtn) navBtn.classList.add('active');
+  if(MODAL_RENDER[name]) MODAL_RENDER[name]();
+}
+function closeModal(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.add('hidden');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+}
+function closeModalIf(e,id){
+  if(e.target===e.currentTarget) closeModal(id);
+}
+
+// ══════════════════════════════════════════════════════
+// MENU SIDEBAR
+// ══════════════════════════════════════════════════════
+function openMenu(){
+  document.getElementById('menu-ov').classList.remove('hidden');
+  document.getElementById('menu-floor-info').textContent=G.maxFloor+'층 · 전생 '+G.prestigeCount+'회';
+  const badge=document.getElementById('attend-badge');
+  if(badge) badge.style.display=hasAttendedToday()?'none':'inline';
+}
+function closeMenu(){document.getElementById('menu-ov').classList.add('hidden');}
+function openAttendance(){closeMenu();renderAttendance();document.getElementById('modal-attend').classList.remove('hidden');}
+function openSettings(){closeMenu();renderSettings();document.getElementById('modal-settings').classList.remove('hidden');}
+
+// ══════════════════════════════════════════════════════
+// HEADER / UI UTILS
+// ══════════════════════════════════════════════════════
+function updateHeader(){
+  const stats=getStats();
+  document.getElementById('hd-gold').textContent=fmt(G.gold);
+  document.getElementById('hd-floor').textContent=G.floor;
+  document.getElementById('hd-prestige').textContent=G.prestigeCount;
+}
+function showClear(txt){
+  document.getElementById('clear-txt').textContent=txt;
+  document.getElementById('clear-ov').classList.add('show');
+}
+function hideClear(){document.getElementById('clear-ov').classList.remove('show');}
+function showBossIntro(name){
+  const ov=document.getElementById('boss-intro-ov');
+  document.getElementById('bi-name').textContent=name;
+  ov.classList.add('show');
+  setTimeout(()=>ov.classList.remove('show'),2000);
+}
+function dropItem(){
+  const r=Math.random();
+  let rar=r<.03?'legend':r<.15?'epic':r<.45?'rare':'common';
+  const pool=ITEM_POOL.filter(x=>x.rar===rar);if(!pool.length) return;
+  const it=pool[Math.floor(Math.random()*pool.length)];
+  if(G.inventory.length<60)G.inventory.push(it.id);
+  notify('🎁 '+it.ico+' '+it.name+' 드롭!');
+}
+function notify(msg){
+  document.querySelectorAll('.notif').forEach(n=>n.remove());
+  const el=document.createElement('div');el.className='notif';el.textContent=msg;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),2600);
+}
+function fmt(n){
+  n=Math.floor(n);
+  if(n>=1e12)return(n/1e12).toFixed(1)+'T';
+  if(n>=1e9)return(n/1e9).toFixed(1)+'B';
+  if(n>=1e6)return(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return(n/1e3).toFixed(1)+'K';
+  return n.toString();
+}
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+loadGame();
+initSkillLv();
+checkOffline();
+// Check attendance badge
+if(!hasAttendedToday()){
+  const badge=document.getElementById('attend-badge');
+  if(badge) badge.style.display='inline';
+}
+spawnNormal();
+updateHeader();
+updateWaveUI();
+</script>
+</body>
+</html>
